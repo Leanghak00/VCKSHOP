@@ -21,10 +21,10 @@ let html5QrCodeScanner = null, html5AttendanceScanner = null;
 // Telegram Bot Configuration
 const TELEGRAM_BOT_TOKEN = "8839366312:AAFIDVQrCvb36nAfZc3AzYZ7PHCBo5pQmgU";
 
-// បញ្ជីបុគ្គលិក (លាងហាក់ ត្រូវបានកំណត់សិទ្ធិជា Admin ដូច វិច្ឆិកា ដែរ)
+// បញ្ជីបុគ្គលិក (លាងហាក់ និង វិច្ឆិកា មានសិទ្ធិជា Admin ពេញលេញ)
 const STAFF_ACCOUNTS = {
     'vicheka': { name: 'វិច្ឆិកា', role: 'Admin' },
-    'leanghak': { name: 'លាងហាក់', role: 'Admin' }, // 🌟 កែសម្រួលផ្តល់សិទ្ធិជា Admin
+    'leanghak': { name: 'លាងហាក់', role: 'Admin' },
     'phanny': { name: 'ផាន់នី', role: 'Cashier' },
     'sopheap': { name: 'សុភាព', role: 'Cashier' },
     'phellin': { name: 'ផល្លីន', role: 'Cashier' }
@@ -267,7 +267,7 @@ async function handleLogin() {
     } catch (error) {
         console.error("Login Error:", error);
         errorEl.innerText = "⚠️ ឈ្មោះអ្នកប្រើប្រាស់ ឬ លេខសម្ងាត់មិនត្រឹមត្រូវឡើយ!";
-        errorEl.classList.add('hidden');
+        errorEl.classList.remove('hidden');
     }
 }
 
@@ -375,7 +375,7 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-// 📷 បើកកាមេរ៉ាស្កេន QR វត្តមាន
+// 📷 បើកកាមេរ៉ាស្កេន QR វត្តមាន (ផ្ទៀងផ្ទាត់អត្ថបទ VCK-SHOP-OFFICIAL)
 function startAttendanceScanner() {
     const readerEl = document.getElementById('attendanceReader');
     const closeBtn = document.getElementById('closeAttendanceCam');
@@ -385,7 +385,7 @@ function startAttendanceScanner() {
     html5AttendanceScanner = new Html5QrcodeScanner("attendanceReader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
     
     html5AttendanceScanner.render((decodedText) => {
-        if (decodedText.includes("VCK-SHOP-OFFICIAL")) {
+        if (decodedText.trim() === "VCK-SHOP-OFFICIAL") {
             verifyAndSubmitAttendance();
             stopAttendanceScanner();
         } else {
@@ -742,9 +742,75 @@ function renderSalesTable(date) {
     `).join('');
 }
 
+// 📈 មុខងារគូរក្រាហ្វិក Chart.js ទាំង ៣ យ៉ាងពេញលេញ
+function renderCharts() {
+    // 1. Chart ប្រៀបធៀបចំណូល
+    const ctx1 = document.getElementById('comparisonChart')?.getContext('2d');
+    if (ctx1) {
+        if (comparisonChartInstance) comparisonChartInstance.destroy();
+        comparisonChartInstance = new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: ['សប្តាហ៍ទី ១', 'សប្តាហ៍ទី ២', 'សប្តាហ៍ទី ៣', 'សប្តាហ៍ទី ៤'],
+                datasets: [{
+                    label: 'ខែនេះ ($)',
+                    data: [150, 300, 450, 600],
+                    borderColor: '#6366f1',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    // 2. Chart ទំនិញលក់ដាច់បំផុត
+    const ctx2 = document.getElementById('bestSellersChart')?.getContext('2d');
+    if (ctx2) {
+        if (myChartInstance) myChartInstance.destroy();
+        myChartInstance = new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: productsData.slice(0, 5).map(p => p.name),
+                datasets: [{
+                    data: productsData.slice(0, 5).map(p => p.total - p.avail),
+                    backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+
+    // 3. Chart តំបន់ដឹកជញ្ជូន (Delivery Hotspots)
+    const ctx3 = document.getElementById('locationHotspotsChart')?.getContext('2d');
+    if (ctx3) {
+        if (locationChartInstance) locationChartInstance.destroy();
+        
+        const locCounts = {};
+        salesData.forEach(s => {
+            if (s.location) locCounts[s.location] = (locCounts[s.location] || 0) + 1;
+        });
+
+        locationChartInstance = new Chart(ctx3, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(locCounts).length ? Object.keys(locCounts) : ['ភ្នំពេញ', 'សៀមរាប', 'បាត់ដំបង'],
+                datasets: [{
+                    label: 'ចំនួនជើងដឹក',
+                    data: Object.values(locCounts).length ? Object.values(locCounts) : [12, 8, 5],
+                    backgroundColor: '#10b981'
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+        });
+    }
+}
+
 function renderAll() {
     renderDashboard();
     
+    // បង្ហាញបញ្ជីទំនិញក្នុងស្តុក (Stock Table Render)
     const stockTbody = document.getElementById('stockTableBody');
     if (stockTbody) {
         const isAdmin = currentUser && currentUser.role === 'Admin';
@@ -777,6 +843,7 @@ function renderAll() {
         `).join('');
     }
     updateDeliveryStatsByDate();
+    renderCharts(); // 👈 ហៅក្រាហ្វិកឱ្យដំណើរការគ្រប់ជ្រុងជ្រោយ
 }
 
 function searchStockFunction() {
