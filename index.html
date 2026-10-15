@@ -275,24 +275,39 @@
                 <section id="tab-attendance" class="tab-content hidden space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                         <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border shadow-sm text-center space-y-4">
-                            <h3 class="font-black text-sm">📷 ស្កែន QR វត្តមានប្រចាំថ្ងៃ</h3>
-                            <p class="text-xs text-slate-500">សូមបើកកាមេរ៉ាស្កេន QR Code របស់ហាងដើម្បី Check-in ឬ Check-out</p>
-                            <button onclick="startAttendanceScanner()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-2xl font-bold text-xs cursor-pointer shadow-md">📷 បើកកាមេរ៉ាស្កេន QR</button>
+                            <h3 class="font-black text-sm">⏰ ស្កែន QR វត្តមានធ្វើការ</h3>
+                            <p class="text-xs text-slate-500">ជ្រើសរើសប្រភេទស្កែន រួចបើកកាមេរ៉ាស្កេន QR ហាង</p>
+                            
+                            <!-- 🔘 ជ្រើសរើស Check-in ឬ Check-out -->
+                            <div class="flex gap-2 justify-center">
+                                <button onclick="setScanType('Check-in')" id="btnCheckIn" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-md cursor-pointer">🟢 ស្កែនចូល (Check-in)</button>
+                                <button onclick="setScanType('Check-out')" id="btnCheckOut" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 cursor-pointer">🔴 ស្កែនចេញ (Check-out)</button>
+                            </div>
+
+                            <!-- 📝 ប្រអប់ហេតុផលយឺត (លេចឡើងបើស្កែនចូលយឺត) -->
+                            <div id="lateReasonContainer" class="hidden text-left space-y-1 pt-2">
+                                <label class="block text-[11px] font-bold text-rose-500">⚠️ ហេតុផលចូលយឺត (បើមាន):</label>
+                                <input type="text" id="attendanceLateReason" placeholder="ឧ. ជាប់ស្ទះចរាចរណ៍ / មានធុរៈផ្ទាល់ខ្លួន..." class="w-full border p-2.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 font-bold">
+                            </div>
+
+                            <button onclick="startAttendanceScanner()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-2xl font-bold text-xs cursor-pointer shadow-md mt-2">📷 បើកកាមេរ៉ាស្កេន QR</button>
                             <div id="attendanceReader" class="w-full overflow-hidden rounded-2xl hidden mt-3"></div>
                             <button id="closeAttendanceCam" onclick="stopAttendanceScanner()" class="hidden w-full bg-rose-500 text-white p-2 rounded-xl text-xs font-bold cursor-pointer">បិទកាមេរ៉ា</button>
                         </div>
                         <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border shadow-sm space-y-4">
                             <h3 class="font-black text-sm border-b pb-3">📌 ព័ត៌មានទីតាំង និងសុពលភាព</h3>
                             <div class="text-xs space-y-2 text-slate-600 dark:text-slate-300">
-                                <p>📍 <strong>ទីតាំងហាង:</strong> VCK SHOP (ត្រូវស្ថិតក្នុងរង្វង់ 100 ម៉ែត្រពីហាង)</p>
-                                <p>🕒 <strong>ម៉ោងកំណត់:</strong> ចូលធ្វើការទៀងទាត់</p>
+                                <p>📍 <strong>ទីតាំងហាង:</strong> VCK SHOP (ស្កែនក្នុងចម្ងាយកំណត់)</p>
+                                <p>🕒 <strong>ម៉ោងកំណត់ចូល:</strong> មុនម៉ោង 08:00 ព្រឹក</p>
                                 <p id="geoStatus" class="font-bold text-indigo-600">រួចរាល់សម្រាប់ការស្កែន...</p>
                             </div>
                         </div>
                     </div>
-                    <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl border shadow-sm max-w-4xl mx-auto space-y-4">
+
+                    <!-- 🔒 បង្ហាញเฉพาะ Admin ប៉ុណ្ណោះ -->
+                    <div id="adminAttendanceCard" class="bg-white dark:bg-slate-900 p-6 rounded-3xl border shadow-sm max-w-4xl mx-auto space-y-4 hidden">
                         <div class="flex justify-between items-center border-b pb-3">
-                            <h3 class="font-black text-sm">📋 ប្រវត្តិវត្តមានបុគ្គលិក</h3>
+                            <h3 class="font-black text-sm">📋 ប្រវត្តិវត្តមានបុគ្គលិក (សម្រាប់ Admin មើល)</h3>
                             <input type="date" id="attendanceFilterDate" onchange="renderAttendanceTable()" class="border p-2 rounded-xl text-xs font-bold bg-slate-50 dark:bg-slate-800">
                         </div>
                         <div class="overflow-x-auto">
@@ -301,8 +316,8 @@
                                     <tr class="bg-slate-50 dark:bg-slate-800 text-[11px] font-bold text-slate-400 border-b">
                                         <th class="p-3 pl-4">បុគ្គលិក</th>
                                         <th class="p-3">ស្ថានភាព</th>
-                                        <th class="p-3">ថ្ងៃខែ</th>
-                                        <th class="p-3 text-right">ម៉ោង</th>
+                                        <th class="p-3">ថ្ងៃខែ / ម៉ោង</th>
+                                        <th class="p-3">ហេតុផលយឺត</th>
                                     </tr>
                                 </thead>
                                 <tbody id="attendanceTableBody"></tbody>
