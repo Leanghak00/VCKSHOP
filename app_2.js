@@ -34,7 +34,7 @@ const STAFF_ACCOUNTS = {
 const STORE_LOCATION = {
     lat: 11.5564, 
     lng: 104.9282, 
-    maxDistanceMeter: 100 
+    maxDistanceMeter: 10000000
 };
 
 window.addEventListener('DOMContentLoaded', () => {
