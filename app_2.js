@@ -17,11 +17,12 @@ let productsData = [], currentUser = null, salesData = [], deliveryData = [], cu
 let myChartInstance = null, comparisonChartInstance = null, locationChartInstance = null, qrcodeInstance = null;
 let currentInvoiceGrandTotal = 0;
 let html5QrCodeScanner = null, html5AttendanceScanner = null;
+let selectedAttendanceType = 'Check-in'; // 🟢 Default ស្កែនចូល
 
 // Telegram Bot Configuration
 const TELEGRAM_BOT_TOKEN = "8839366312:AAFIDVQrCvb36nAfZc3AzYZ7PHCBo5pQmgU";
 
-// បញ្ជីបុគ្គលិក (លាងហាក់ និង វិច្ឆិកា មានសិទ្ធិជា Admin ពេញលេញ)
+// បញ្ជីបុគ្គលិក (លាងហាក់ និង វិច្ឆិកា មានសិទ្ធិជា Admin)
 const STAFF_ACCOUNTS = {
     'vicheka': { name: 'វិច្ឆិកា', role: 'Admin' },
     'leanghak': { name: 'លាងហាក់', role: 'Admin' },
@@ -30,11 +31,10 @@ const STAFF_ACCOUNTS = {
     'phellin': { name: 'ផល្លីន', role: 'Cashier' }
 };
 
-// កូអរដោនេទីតាំងហាង VCK SHOP (សម្រាប់ Geofencing GPS)
 const STORE_LOCATION = {
     lat: 11.5564, 
     lng: 104.9282, 
-    maxDistanceMeter: 10000000
+    maxDistanceMeter: 50000 // កំណត់ចម្ងាយ GPS (អាចកែសម្រួលបាន)
 };
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -203,13 +203,16 @@ function applyUserRolePermissions() {
     const role = currentUser.role;
     const dashCards = document.getElementById('dash-cards-container');
     const stockForm = document.getElementById('stock-entry-form');
+    const adminAttCard = document.getElementById('adminAttendanceCard');
 
     if (role === 'Cashier') {
         if (dashCards) dashCards.classList.add('hidden');
         if (stockForm) stockForm.classList.add('hidden');
+        if (adminAttCard) adminAttCard.classList.add('hidden'); // Cashier មើលមិនឃើញតារាងវត្តមានទេ
     } else {
         if (dashCards) dashCards.classList.remove('hidden');
         if (stockForm) stockForm.classList.remove('hidden');
+        if (adminAttCard) adminAttCard.classList.remove('hidden'); // Admin មើលឃើញ
     }
 }
 
@@ -297,7 +300,6 @@ async function handleLogout() {
     try {
         await auth.signOut();
         currentUser = null;
-        localStorage.removeItem('vck_current_user');
         location.reload();
     } catch (error) {
         console.error("Logout Error:", error);
@@ -324,7 +326,7 @@ function switchTab(tabId) {
         'delivery': '🚚 ប្រព័ន្ធដឹកជញ្ជូន', 
         'stock': '📦 គ្រប់គ្រងឃ្លាំងស្តុក',
         'attendance': '⏰ ស្កេនវត្តមានធ្វើការ',
-        'customer-history': '👥 ប្រវត្តិទិញរបស់អតិថិជន'
+        'customer-history': '👥 ប្រវត្តិទិញអតិថិជន'
     };
     document.getElementById('pageTitle').innerText = titles[tabId] || 'VCK System';
 
@@ -359,11 +361,10 @@ function listenToFirebaseData() {
     database.ref('attendance').on('value', (snapshot) => {
         const data = snapshot.val();
         attendanceData = data ? Object.values(data) : [];
-        renderAttendanceTable();
+        if (currentUser?.role === 'Admin') renderAttendanceTable();
     });
 }
 
-// 📌 គណនាចម្ងាយ GPS (Haversine Formula)
 function calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371e3;
     const φ1 = lat1 * Math.PI/180;
@@ -375,7 +376,31 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-// 📷 បើកកាមេរ៉ាស្កេន QR វត្តមាន (ផ្ទៀងផ្ទាត់អត្ថបទ VCK-SHOP-OFFICIAL)
+// 🟢 ជ្រើសរើសប្រភេទស្កែន (Check-in ឬ Check-out)
+function setScanType(type) {
+    selectedAttendanceType = type;
+    const btnIn = document.getElementById('btnCheckIn');
+    const btnOut = document.getElementById('btnCheckOut');
+    const lateContainer = document.getElementById('lateReasonContainer');
+
+    if (type === 'Check-in') {
+        btnIn.className = "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-md cursor-pointer";
+        btnOut.className = "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 cursor-pointer";
+        
+        // ពិនិត្យមើលថាតើហួសម៉ោង 8:00 ព្រឹកឬនៅ ដើម្បីបង្ហាញប្រអប់ហេតុផលយឺត
+        const now = new Date();
+        if (now.getHours() >= 8) {
+            lateContainer.classList.remove('hidden');
+        } else {
+            lateContainer.classList.add('hidden');
+        }
+    } else {
+        btnOut.className = "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-rose-600 text-white shadow-md cursor-pointer";
+        btnIn.className = "flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 cursor-pointer";
+        lateContainer.classList.add('hidden'); // ស្កែនចេញមិនបាច់ដាក់ហេតុផលយឺតទេ
+    }
+}
+
 function startAttendanceScanner() {
     const readerEl = document.getElementById('attendanceReader');
     const closeBtn = document.getElementById('closeAttendanceCam');
@@ -402,7 +427,6 @@ function stopAttendanceScanner() {
     document.getElementById('closeAttendanceCam').classList.add('hidden');
 }
 
-// 📍 ផ្ទៀងផ្ទាត់ GPS មុននឹងបញ្ជូនវត្តមាន
 function verifyAndSubmitAttendance() {
     const statusEl = document.getElementById('geoStatus');
     if (!navigator.geolocation) return alert("⚠️ Browser របស់អ្នកមិនគាំទ្រ Geolocation ទេ!");
@@ -414,17 +438,15 @@ function verifyAndSubmitAttendance() {
 
         if (distance > STORE_LOCATION.maxDistanceMeter) {
             statusEl.innerText = `❌ អ្នកនៅឆ្ងាយពីហាងពេក (${Math.round(distance)} ម៉ែត្រ)!`;
-            alert(`⚠️ អ្នកនៅក្រៅបរិវេណហាង (${Math.round(distance)}m)! សូមមកស្កេនក្នុងហាង។`);
+            alert(`⚠️ អ្នកនៅក្រៅបរិវេណហាង (${Math.round(distance)}m)!`);
             return;
         }
 
-        statusEl.innerText = `✅ ទីតាំងត្រឹមត្រូវ (ស្ថិតក្នុងចម្ងាយ ${Math.round(distance)} ម៉ែត្រពីហាង)`;
-        const now = new Date();
-        const type = now.getHours() < 12 ? 'Check-in' : 'Check-out';
-        await saveAttendanceRecord(type);
+        statusEl.innerText = `✅ ទីតាំងត្រឹមត្រូវ (ស្ថិតក្នុងចម្ងាយ ${Math.round(distance)} ម៉ែត្រ)`;
+        await saveAttendanceRecord(selectedAttendanceType);
     }, (error) => {
-        statusEl.innerText = "❌ មិនអាចទាញយកទីតាំង GPS បានទេ!";
-        alert("⚠️ សូមបើក GPS / Location នៅលើទូរស័ព្ទរបស់អ្នកជាមុនសិន!");
+        statusEl.innerText = "❌ មិនអាចទាញយកទីតាំង GPS ได้ទេ!";
+        alert("⚠️ សូមបើក GPS នៅលើឧបករណ៍របស់អ្នក!");
     }, { enableHighAccuracy: true });
 }
 
@@ -433,10 +455,13 @@ async function saveAttendanceRecord(type) {
     const now = new Date();
     const dateStr = now.toISOString().split('T')[0];
     const timeStr = now.toLocaleTimeString('en-US', { hour12: true });
+    
+    const lateReasonInput = document.getElementById('attendanceLateReason');
+    const lateReason = (type === 'Check-in' && now.getHours() >= 8) ? (lateReasonInput?.value.trim() || 'មកយឺតដោយគ្មានមូលហេតុច្បាស់លាស់') : '-';
 
     const alreadyDone = attendanceData.some(a => a.staffName === currentUser.name && a.date === dateStr && a.type === type);
-    if (alreadyDone && type === 'Check-in') {
-        return alert(`⚠️ ${currentUser.name} បាន Check-in រួចរាល់ហើយសម្រាប់ថ្ងៃនេះ!`);
+    if (alreadyDone) {
+        return alert(`⚠️ ${currentUser.name} បាន ${type} រួចរាល់ហើយសម្រាប់ថ្ងៃនេះ!`);
     }
 
     try {
@@ -445,9 +470,11 @@ async function saveAttendanceRecord(type) {
             type: type,
             date: dateStr,
             time: timeStr,
+            lateReason: lateReason,
             timestamp: Date.now()
         });
         alert(`🎉 ${currentUser.name} បាន ${type} ជោគជ័យនៅម៉ោង ${timeStr}!`);
+        if(lateReasonInput) lateReasonInput.value = '';
     } catch (error) {
         console.error("Attendance Error:", error);
         alert("❌ មិនអាចកត់ត្រាវត្តមានបានទេ!");
@@ -455,6 +482,7 @@ async function saveAttendanceRecord(type) {
 }
 
 function renderAttendanceTable() {
+    if (currentUser?.role !== 'Admin') return; // បើមិនមែន Admin មិនបាច់បង្ហាញទេ
     const tbody = document.getElementById('attendanceTableBody');
     if (!tbody) return;
     const selectedDate = document.getElementById('attendanceFilterDate')?.value || new Date().toISOString().split('T')[0];
@@ -469,8 +497,8 @@ function renderAttendanceTable() {
         <tr class="text-xs border-b border-slate-100 dark:border-slate-800">
             <td class="p-3 pl-4 font-bold dark:text-white">${a.staffName}</td>
             <td class="p-3"><span class="px-2 py-1 rounded-lg text-[10px] font-bold ${a.type === 'Check-in' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${a.type}</span></td>
-            <td class="p-3 text-slate-500">${a.date}</td>
-            <td class="p-3 text-right font-bold text-slate-700 dark:text-slate-300">${a.time}</td>
+            <td class="p-3 text-slate-500">${a.date} | <strong class="text-slate-700 dark:text-slate-300">${a.time}</strong></td>
+            <td class="p-3 text-rose-600 font-bold">${a.lateReason || '-'}</td>
         </tr>
     `).join('');
 }
@@ -742,9 +770,7 @@ function renderSalesTable(date) {
     `).join('');
 }
 
-// 📈 មុខងារគូរក្រាហ្វិក Chart.js ទាំង ៣ យ៉ាងពេញលេញ
 function renderCharts() {
-    // 1. Chart ប្រៀបធៀបចំណូល
     const ctx1 = document.getElementById('comparisonChart')?.getContext('2d');
     if (ctx1) {
         if (comparisonChartInstance) comparisonChartInstance.destroy();
@@ -765,7 +791,6 @@ function renderCharts() {
         });
     }
 
-    // 2. Chart ទំនិញលក់ដាច់បំផុត
     const ctx2 = document.getElementById('bestSellersChart')?.getContext('2d');
     if (ctx2) {
         if (myChartInstance) myChartInstance.destroy();
@@ -782,11 +807,9 @@ function renderCharts() {
         });
     }
 
-    // 3. Chart តំបន់ដឹកជញ្ជូន (Delivery Hotspots)
     const ctx3 = document.getElementById('locationHotspotsChart')?.getContext('2d');
     if (ctx3) {
         if (locationChartInstance) locationChartInstance.destroy();
-        
         const locCounts = {};
         salesData.forEach(s => {
             if (s.location) locCounts[s.location] = (locCounts[s.location] || 0) + 1;
@@ -810,7 +833,6 @@ function renderCharts() {
 function renderAll() {
     renderDashboard();
     
-    // បង្ហាញបញ្ជីទំនិញក្នុងស្តុក (Stock Table Render)
     const stockTbody = document.getElementById('stockTableBody');
     if (stockTbody) {
         const isAdmin = currentUser && currentUser.role === 'Admin';
@@ -843,7 +865,7 @@ function renderAll() {
         `).join('');
     }
     updateDeliveryStatsByDate();
-    renderCharts(); // 👈 ហៅក្រាហ្វិកឱ្យដំណើរការគ្រប់ជ្រុងជ្រោយ
+    renderCharts();
 }
 
 function searchStockFunction() {
