@@ -1,4 +1,3 @@
-// Firebase Configuration (បានកែសម្រួល Config ថ្មី និង DatabaseURL របស់ Project vckshop-b1251 ឱ្យត្រូវគ្នា១០០%)
 // Firebase Configuration
 const firebaseConfig = {
     apiKey: "AIzaSyAw0owrI_MjRPJmQLzd9zNFyjcdgRc7H4I",
@@ -12,29 +11,23 @@ const firebaseConfig = {
 
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
-const auth = firebase.auth(); // 🔒 Firebase Authentication Instance
+const auth = firebase.auth();
 
 let productsData = [], currentUser = null, salesData = [], deliveryData = [], currentInvoiceItems = [];
-let myChartInstance = null;
-let comparisonChartInstance = null;
-let locationChartInstance = null;
-let qrcodeInstance = null;
+let myChartInstance = null, comparisonChartInstance = null, locationChartInstance = null, qrcodeInstance = null;
 let currentInvoiceGrandTotal = 0;
-let html5QrCodeScanner = null; // 📷 Barcode Scanner Instance
+let html5QrCodeScanner = null;
 
-// Telegram Bot Configuration (ជំនួស Bot Token និង Chat ID របស់អ្នកនៅទីនេះ)
-const TELEGRAM_BOT_TOKEN = "YOUR_BOT_TOKEN_HERE";
-const TELEGRAM_CHAT_ID = "YOUR_CHAT_ID_HERE";
+// Telegram Bot Configuration
+const TELEGRAM_BOT_TOKEN = "8839366312:AAFIDVQrCvb36nAfZc3AzYZ7PHCBo5pQmgU";
 
 window.addEventListener('DOMContentLoaded', () => {
     startClock();
     initTheme();
     requestNotificationPermission();
     
-    // 🔒 ពិនិត្យមើល Firebase Auth State ស្រាប់
     auth.onAuthStateChanged((user) => {
         if (user) {
-            // ទាញយក Role ពី Realtime Database តាម UID
             database.ref('users/' + user.uid).once('value').then(snapshot => {
                 const userData = snapshot.val();
                 currentUser = {
@@ -54,27 +47,40 @@ function requestNotificationPermission() {
     }
 }
 
-function triggerPhoneNotification(invCode, customer, total) {
-    if ("Notification" in window && Notification.permission === "granted") {
-        const options = {
-            body: `👤 អតិថិជន: ${customer}\n💰 ទឹកប្រាក់សរុប: $${total.toFixed(2)}`,
-            icon: 'https://cdn-icons-png.flaticon.com/512/3144/3144456.png',
-            vibrate: [200, 100, 200],
-            tag: invCode
-        };
-        new Notification(`🧾 វិក្កយបត្រថ្មី៖ ${invCode}`, options);
+// 🛠️ មុខងារស្វែងរក Chat ID ស្វ័យប្រវត្តិ (Auto-Detect for Group)
+async function getTelegramChatId() {
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getUpdates`;
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        if (data.ok && data.result.length > 0) {
+            const lastUpdate = data.result[data.result.length - 1];
+            const chatId = lastUpdate.message?.chat?.id || lastUpdate.my_chat_member?.chat?.id;
+            return chatId;
+        }
+    } catch (error) {
+        console.error("Error fetching Chat ID:", error);
     }
+    return null;
 }
 
-// 🔔 មុខងារផ្ញើសារជូនដំណឹងចូល Telegram Group
+// 🔔 មុខងារផ្ញើសារជូនដំណឹងចូល Telegram គ្រុបផ្ទៃក្នុង
 async function sendTelegramNotification(invCode, customer, phone, location, total, items) {
-    if (TELEGRAM_BOT_TOKEN === "YOUR_BOT_TOKEN_HERE") return;
-    const itemsListStr = items.map(i => `- ${i.name} (x${i.qty}): $${i.totalPrice.toFixed(2)}`).join('\n');
+    const chatId = await getTelegramChatId();
+    if (!chatId) {
+        console.warn("⚠️ រកមិនឃើញ Telegram Chat ID សម្រាប់គ្រុបទេ!");
+        return;
+    }
+
+    const itemsListStr = items.map(i => `▪️ <b>${i.name}</b> (x${i.qty}) : <b>$${i.totalPrice.toFixed(2)}</b>`).join('\n');
     const message = `🚨 <b>មានការបញ្ជាទិញថ្មី! (VCK SHOP)</b>\n\n` +
+                    `━━━━━━━━━━━━━━━━━━━\n` +
                     `🧾 លេខវិក្កយបត្រ: <b>${invCode}</b>\n` +
-                    `👤 អតិថិជន: ${customer} (${phone})\n` +
-                    `📍 ទីតាំងដឹក: ${location}\n\n` +
-                    `🛒 <b>ទំនិញទិញ៖</b>\n${itemsListStr}\n\n` +
+                    `👤 អតិថិជន: <b>${customer}</b> (${phone})\n` +
+                    `📍 ទីតាំងដឹក: <b>${location}</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━\n` +
+                    `🛒 <b>បញ្ជីទំនិញ៖</b>\n${itemsListStr}\n` +
+                    `━━━━━━━━━━━━━━━━━━━\n` +
                     `💰 <b>ទឹកប្រាក់សរុប: $${total.toFixed(2)}</b>`;
 
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
@@ -82,10 +88,142 @@ async function sendTelegramNotification(invCode, customer, phone, location, tota
         await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: message, parse_mode: 'HTML' })
+            body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' })
         });
     } catch (error) {
         console.error("Telegram Error:", error);
+    }
+}
+
+// ✈️ បើក Modal ផ្ញើ Telegram ដោយយកលេខទូរស័ព្ទស្វ័យប្រវត្តិ
+function sendDirectCustomerTelegramModal() {
+    if (currentInvoiceItems.length === 0) {
+        return alert("⚠️ សូមបញ្ចូលមុខទំនិញក្នុងវិក្កយបត្រជាមុនសិន!");
+    }
+    const currentPhone = document.getElementById('invoicePhone').value || '';
+    document.getElementById('targetCustomerPhone').value = currentPhone;
+    document.getElementById('telegramModal').classList.remove('hidden');
+}
+
+function closeTelegramModal() {
+    document.getElementById('telegramModal').classList.add('hidden');
+}
+
+// 🔗 មុខងារ Share តំណសារ ឬវិក្កយបត្រចូល Telegram ផ្ទាល់ (រចនាម៉ូដស្អាតទាក់ទាញ)
+function shareDirectToTelegramLink() {
+    const customer = document.getElementById('invoiceCustomer').value || 'អតិថិជន';
+    const phone = document.getElementById('invoicePhone').value || '-';
+    const location = document.getElementById('invoiceLocation').value || '-';
+    const itemsTotal = currentInvoiceItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    const deliveryFee = parseFloat(document.getElementById('invoiceDeliveryFee').value) || 0;
+    const discount = parseFloat(document.getElementById('invoiceDiscount').value) || 0;
+    const grandTotal = Math.max(0, itemsTotal + deliveryFee - discount);
+
+    const itemsListStr = currentInvoiceItems.map(i => `▪️ ${i.name} (x${i.qty}) ➔ $${i.totalPrice.toFixed(2)}`).join('\n');
+    
+    const message = `🛍️ **VCK SHOP - វិក្កយបត្រទិញទំនិញ**\n` +
+                    `━━━━━━━━━━━━━━━━━━━\n` +
+                    `👤 ឈ្មោះ: ${customer} (${phone})\n` +
+                    `📍 ទីតាំង: ${location}\n` +
+                    `━━━━━━━━━━━━━━━━━━━\n` +
+                    `🛒 **បរិយាយទំនិញ៖**\n${itemsListStr}\n\n` +
+                    `🚚 សេវាដឹក: $${deliveryFee.toFixed(2)}\n` +
+                    (discount > 0 ? `🎁 បញ្ចុះតម្លៃ: -$${discount.toFixed(2)}\n` : '') +
+                    `━━━━━━━━━━━━━━━━━━━\n` +
+                    `💰 **ទឹកប្រាក់សរុប: $${grandTotal.toFixed(2)}**\n` +
+                    `━━━━━━━━━━━━━━━━━━━\n` +
+                    `🙏 សូមអរគុណចំពោះការគាំទ្រផលិតផលប្រណិតពី VCK SHOP! ✨`;
+
+    const telegramShareUrl = `https://t.me/share/url?url=&text=${encodeURIComponent(message)}`;
+    window.open(telegramShareUrl, '_blank');
+    closeTelegramModal();
+}
+
+// 📱 ផ្ញើតាមរយៈ Bot ដោយផ្អែកលើលេខទូរស័ព្ទ (រចនាម៉ូដស្អាតទាក់ទាញ)
+async function confirmSendTelegramByPhone() {
+    const phone = document.getElementById('targetCustomerPhone').value.trim();
+    if (!phone) return alert("⚠️ សូមបញ្ចូលលេខទូរស័ព្ទអតិថិជន!");
+
+    const chatId = await getTelegramChatId(); 
+    if (!chatId) {
+        alert("⚠️ រកមិនឃើញ Chat ID ស្វ័យប្រវត្តិទេ! សូមប្រើប្រាស់ប៊ូតុង 'Share ទៅ Telegram ផ្ទាល់' វិញ។");
+        return;
+    }
+
+    const customer = document.getElementById('invoiceCustomer').value || 'អតិថិជន';
+    const location = document.getElementById('invoiceLocation').value || '-';
+    const itemsTotal = currentInvoiceItems.reduce((sum, item) => sum + item.totalPrice, 0);
+    const deliveryFee = parseFloat(document.getElementById('invoiceDeliveryFee').value) || 0;
+    const discount = parseFloat(document.getElementById('invoiceDiscount').value) || 0;
+    const grandTotal = Math.max(0, itemsTotal + deliveryFee - discount);
+    const itemsListStr = currentInvoiceItems.map(i => `▪️ <b>${i.name}</b> (x${i.qty}) ➔ <b>$${i.totalPrice.toFixed(2)}</b>`).join('\n');
+
+    const message = `🛍️ <b>VCK SHOP - វិក្កយបត្រទិញទំនិញ</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━\n` +
+                    `👤 អតិថិជន: <b>${customer}</b> (${phone})\n` +
+                    `📍 ទីតាំង: <b>${location}</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━\n` +
+                    `🛒 <b>បញ្ជីទំនិញ៖</b>\n${itemsListStr}\n\n` +
+                    `🚚 សេវាដឹក: $${deliveryFee.toFixed(2)}\n` +
+                    (discount > 0 ? `🎁 បញ្ចុះតម្លៃ: -$${discount.toFixed(2)}\n` : '') +
+                    `━━━━━━━━━━━━━━━━━━━\n` +
+                    `💰 <b>ទឹកប្រាក់សរុប: $${grandTotal.toFixed(2)}</b>\n` +
+                    `━━━━━━━━━━━━━━━━━━━\n` +
+                    `🙏 សូមអរគុណចំពោះការគាំទ្រផលិតផលប្រណិតពី VCK SHOP! ✨`;
+
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' })
+        });
+        const data = await response.json();
+        if (data.ok) {
+            alert("✅ បានផ្ញើវិក្កយបត្រជូនអតិថិជនជោគជ័យ!");
+            closeTelegramModal();
+        } else {
+            alert("⚠️ មិនអាចផ្ញើសារបានទេ!");
+        }
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
+// 🎉 សារអបអរសាទរពេលទំនិញដល់ដៃអតិថិជន (បើក Telegram Share ផ្ញើផ្ទាល់ដោយស្វ័យប្រវត្តិ)
+async function sendDeliverySuccessNotice(customerPhone, invCode, customerName) {
+    const noticeText = `🎉 ✨ **អបអរសាទរ និងសូមអរគុណ ${customerName} (${customerPhone})!** ✨ 🎉\n` +
+                       `━━━━━━━━━━━━━━━━━━━\n` +
+                       `📦 វិក្កយបត្រលេខ: ${invCode}\n` +
+                       `🚚 ឥឡូវនេះទំនិញរបស់អ្នកត្រូវបានដឹកជញ្ជូនដល់ដៃដោយសុវត្ថិភាព និងភាពប្រណិតរួចរាល់ហើយ!\n` +
+                       `━━━━━━━━━━━━━━━━━━━\n` +
+                       `🙏 ថែរក្សា និងកុំភ្លេចបម្រើសេវាកម្មយើងខ្ញុំម្ដងទៀតនៅពេលក្រោយ!\n` +
+                       `🌟 **VCK SHOP** - ផ្គត់ផ្គង់សម្ភារៈតុការចានប្រណិតទាន់សម័យ។`;
+
+    const telegramUrl = `https://t.me/share/url?url=&text=${encodeURIComponent(noticeText)}`;
+    window.open(telegramUrl, '_blank');
+}
+
+// 🛡️ ការត្រនិត្យសិទ្ធិអ្នកប្រើប្រាស់ (User Roles & Permissions)
+function applyUserRolePermissions() {
+    if (!currentUser) return;
+    const role = currentUser.role; // 'Admin' ឬ 'Cashier'
+
+    const dashCards = document.getElementById('dash-cards-container');
+    const thTotal = document.getElementById('th-dashboard-total');
+    const thAction = document.getElementById('th-dashboard-action');
+    const stockForm = document.getElementById('stock-entry-form');
+
+    if (role === 'Cashier') {
+        if (dashCards) dashCards.classList.add('hidden');
+        if (thTotal) thTotal.classList.add('hidden');
+        if (thAction) thAction.classList.add('hidden');
+        if (stockForm) stockForm.classList.add('hidden');
+    } else {
+        if (dashCards) dashCards.classList.remove('hidden');
+        if (thTotal) thTotal.classList.remove('hidden');
+        if (thAction) thAction.classList.remove('hidden');
+        if (stockForm) stockForm.classList.remove('hidden');
     }
 }
 
@@ -114,7 +252,6 @@ function startClock() {
     }, 1000);
 }
 
-// 🔒 មុខងារ Login ប្រើប្រាស់ Firebase Authentication ពិតប្រាកដ
 async function handleLogin() {
     const userIn = document.getElementById('loginUsername').value.trim();
     const passIn = document.getElementById('loginPassword').value;
@@ -137,7 +274,7 @@ async function handleLogin() {
 
         currentUser = {
             name: userData ? userData.name : userIn,
-            role: userData ? userData.role : (userIn.toLowerCase() === 'vk' ? 'Admin' : 'User'),
+            role: userData ? userData.role : (userIn.toLowerCase() === 'vk' ? 'Admin' : 'Cashier'),
             email: user.email
         };
 
@@ -165,25 +302,7 @@ function initSystemAfterLogin() {
     if (document.getElementById('pdfDate')) document.getElementById('pdfDate').innerText = today;
     if (document.getElementById('deliveryStatDate')) document.getElementById('deliveryStatDate').value = today;
 
-    const dashCards = document.getElementById('dash-cards-container');
-    const thTotal = document.getElementById('th-dashboard-total');
-    const thAction = document.getElementById('th-dashboard-action');
-
-    if (currentUser.role === 'Admin') {
-        if (dashCards) dashCards.classList.remove('hidden');
-        if (thTotal) thTotal.classList.remove('hidden');
-        if (thAction) thAction.classList.remove('hidden');
-    } else {
-        if (dashCards) dashCards.classList.add('hidden');
-        if (thTotal) thTotal.classList.add('hidden');
-        if (thAction) thAction.classList.add('hidden');
-    }
-
-    if (currentUser.role !== 'Admin') {
-        const stockForm = document.getElementById('stock-entry-form');
-        if (stockForm) stockForm.classList.add('hidden');
-    }
-
+    applyUserRolePermissions();
     setupLivePreviewInputs();
     listenToFirebaseData();
     switchTab('dashboard');
@@ -300,7 +419,6 @@ function autoFillProductPrice() {
     }
 }
 
-// 📷 មុខងារ Barcode / QR Code Scanner តាមកាមេរ៉ា
 function startBarcodeScanner() {
     const modal = document.getElementById('barcodeModal');
     if (modal) modal.classList.remove('hidden');
@@ -316,8 +434,6 @@ function startBarcodeScanner() {
             autoFillProductPrice();
             stopBarcodeScanner();
             alert(`✅ បានស្កែនរកឃើញទំនិញ: ${matchedProd.name}`);
-        } else {
-            console.log(`Scanned: ${decodedText}`);
         }
     }, (error) => {});
 }
@@ -330,7 +446,6 @@ function stopBarcodeScanner() {
     if (modal) modal.classList.add('hidden');
 }
 
-// 🎙️ មុខងារ Voice-Activated Ordering (បញ្ជាដោយសំឡេង)
 function startVoiceOrdering() {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
         return alert("⚠️ Browser របស់អ្នកមិនគាំទ្រ Web Speech API ទេ!");
@@ -344,7 +459,6 @@ function startVoiceOrdering() {
 
     const btn = document.getElementById('voiceBtn');
     if (btn) btn.innerText = "🎙️ កំពុងស្តាប់...";
-
     recognition.start();
 
     recognition.onresult = (event) => {
@@ -356,19 +470,11 @@ function startVoiceOrdering() {
             document.getElementById('invoiceProductInput').value = matchedProd.name;
             autoFillProductPrice();
             alert(`🎤 បានស្ដាប់ឮ: "${speechResult}" ➔ ជ្រើសរើសទំនិញ: ${matchedProd.name}`);
-        } else {
-            alert(`🎤 បានស្ដាប់ឮ: "${speechResult}" (រកមិនឃើញទំនិញត្រូវគ្នាទេ)`);
         }
     };
 
-    recognition.onerror = () => {
-        if (btn) btn.innerText = "🎙️ បញ្ជាដោយសំឡេង";
-        alert("⚠️ មានបញ្ហាក្នុងការទទួលសំឡេង សូមព្យាយាមម្តងទៀត!");
-    };
-
-    recognition.onend = () => {
-        if (btn) btn.innerText = "🎙️ បញ្ជាដោយសំឡេង";
-    };
+    recognition.onerror = () => { if (btn) btn.innerText = "🎙️ បញ្ជាដោយសំឡេង"; };
+    recognition.onend = () => { if (btn) btn.innerText = "🎙️ បញ្ជាដោយសំឡេង"; };
 }
 
 function adjustInvoiceQty(amount) {
@@ -506,7 +612,7 @@ async function saveFinalInvoice() {
     const fromLoc = document.getElementById('invoiceFromLocation').value.trim();
     const location = document.getElementById('invoiceLocation').value.trim();
     const date = document.getElementById('invoiceDate').value;
-    const driver = document.getElementById('invoiceDriverSelect').value;
+    const driver = document.getElementById('invoiceDriverSelect')?.value || 'មិនទាន់ចាត់ចែង';
     const deliveryFee = parseFloat(document.getElementById('invoiceDeliveryFee').value) || 0;
     const discount = parseFloat(document.getElementById('invoiceDiscount')?.value) || 0;
 
@@ -534,8 +640,7 @@ async function saveFinalInvoice() {
         await database.ref('products').set(productsObj);
 
         playSuccessSound();
-        triggerPhoneNotification(invCode, customer, grandTotal);
-        sendTelegramNotification(invCode, customer, phone, location, grandTotal, currentInvoiceItems);
+        await sendTelegramNotification(invCode, customer, phone, location, grandTotal, currentInvoiceItems);
         downloadInvoicePDF(invCode);
 
         alert(`🎉 រក្សាទុកវិក្កយបត្រលេខ ${invCode} រួចរាល់ដោយជោគជ័យ!`);
@@ -679,6 +784,7 @@ function downloadInvoicePDF(customInvCode) {
 }
 
 function addNewProductToStock() {
+    if (currentUser && currentUser.role === 'Cashier') return alert("⚠️ អ្នកគ្មានសិទ្ធិបន្ថែមទំនិញទេ!");
     const name = document.getElementById('newProdName').value.trim();
     const cat = document.getElementById('newProdCat').value.trim();
     const total = parseInt(document.getElementById('newProdTotal').value);
@@ -694,6 +800,7 @@ function addNewProductToStock() {
 }
 
 function autoSaveProduct(id) {
+    if (currentUser && currentUser.role === 'Cashier') return;
     const total = parseInt(document.getElementById(`inline-total-${id}`).value);
     const avail = parseInt(document.getElementById(`inline-avail-${id}`).value);
     const price = parseFloat(document.getElementById(`inline-price-${id}`).value);
@@ -702,6 +809,7 @@ function autoSaveProduct(id) {
 }
 
 function deleteProductFromStock(id) {
+    if (!currentUser || currentUser.role !== 'Admin') return alert("⚠️ អ្នកគ្មានសិទ្ធិលុបទំនិញទេ!");
     if (confirm("⚠️ ចង់លុបទំនិញនេះមែនទេ?")) database.ref('products').child(id).remove();
 }
 
@@ -710,7 +818,15 @@ function updateDriver(invCode, driver) {
 }
 
 function updateStatus(invCode, status) { 
-    database.ref('deliveries/' + invCode).update({ status }).then(() => updateDeliveryStatsByDate()); 
+    database.ref('deliveries/' + invCode).update({ status }).then(() => {
+        updateDeliveryStatsByDate();
+        if (status === 'បានប្រគល់ជូន') {
+            const deliveryItem = deliveryData.find(d => d.invCode === invCode);
+            if (deliveryItem) {
+                sendDeliverySuccessNotice(deliveryItem.phone, invCode, deliveryItem.customer);
+            }
+        }
+    }); 
 }
 
 function updateDeliveryStatsByDate() {
@@ -822,17 +938,14 @@ function renderSalesTable(selectedDate) {
                 if (currentUser && currentUser.role === 'Admin') {
                     totalTd = `<td class="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">$${totalAmt.toFixed(2)}</td>`;
                     actionTd = `<td class="p-3 text-center pr-6 flex justify-center gap-1"><button onclick="viewInvoice('${s.invCode}')" class="bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-600 hover:text-white text-indigo-600 p-1.5 rounded-lg text-[11px] cursor-pointer">👁️</button><button onclick="deleteInvoice('${s.invCode}')" class="bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-600 hover:text-white text-rose-600 p-1.5 rounded-lg text-[11px] cursor-pointer">🗑️</button></td>`;
+                } else {
+                    totalTd = `<td class="p-3 text-right font-bold text-emerald-600 dark:text-emerald-400">***</td>`;
+                    actionTd = `<td class="p-3 text-center pr-6"><button onclick="viewInvoice('${s.invCode}')" class="bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-600 hover:text-white text-indigo-600 p-1.5 rounded-lg text-[11px] cursor-pointer">👁️ មើល</button></td>`;
                 }
                 return `<tr class="text-xs hover:bg-slate-50 dark:hover:bg-slate-800/50 transition border-b border-slate-100 dark:border-slate-800"><td class="p-3 pl-6">${s.date || '-'}</td><td class="p-3 text-indigo-600 font-bold cursor-pointer" onclick="viewInvoice('${s.invCode}')">${s.invCode || '-'}</td><td class="p-3 font-bold text-slate-800 dark:text-slate-200">${s.customer || '-'}</td><td class="p-3 text-slate-500">${s.location || '-'}</td>${totalTd}${actionTd}</tr>`;
             }).join('');
         }
     }
-}
-
-function filterDashSalesTable() {
-    const input = document.getElementById('dashSalesSearch').value.toLowerCase();
-    const trs = document.getElementById('salesTableBody').getElementsByTagName('tr');
-    for (let tr of trs) tr.style.display = tr.textContent.toLowerCase().includes(input) ? '' : 'none';
 }
 
 function filterDeliveryTable() {
@@ -866,15 +979,16 @@ function renderAll() {
 
     const stockTbody = document.getElementById('stockTableBody');
     if (stockTbody) {
+        const isAdmin = currentUser && currentUser.role === 'Admin';
         stockTbody.innerHTML = productsData.length === 0 ? `<tr><td colspan="7" class="p-6 text-center text-xs font-bold text-slate-400">📦 មិនទាន់មានទំនិញទេ</td></tr>` : productsData.map((p, index) => `
             <tr class="text-xs hover:bg-slate-50 dark:hover:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
                 <td class="p-3 text-center font-bold text-slate-400">${index + 1}</td>
                 <td class="p-3 font-bold text-slate-800 dark:text-slate-200">${p.name}</td>
                 <td class="p-3"><span class="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-lg text-[10px] font-bold">${p.cat}</span></td>
-                <td class="p-2 text-center"><input type="number" id="inline-total-${p.id}" value="${p.total}" onchange="autoSaveProduct(${p.id})" class="w-16 border rounded-lg text-center p-1 font-bold dark:bg-slate-800 dark:text-white"></td>
-                <td class="p-2 text-center"><input type="number" id="inline-avail-${p.id}" value="${p.avail}" onchange="autoSaveProduct(${p.id})" class="w-16 border rounded-lg text-center p-1 font-bold ${p.avail <= 5 ? 'text-rose-500 bg-rose-50' : ''} dark:bg-slate-800 dark:text-white"></td>
-                <td class="p-2 text-right"><input type="number" step="0.01" id="inline-price-${p.id}" value="${p.price}" onchange="autoSaveProduct(${p.id})" class="w-20 border rounded-lg text-right p-1 font-bold dark:bg-slate-800 dark:text-white"></td>
-                <td class="p-3 text-center"><button onclick="deleteProductFromStock(${p.id})" class="text-rose-600 hover:text-rose-800 cursor-pointer text-sm">🗑️</button></td>
+                <td class="p-2 text-center"><input type="number" id="inline-total-${p.id}" value="${p.total}" ${!isAdmin?'readonly':''} onchange="autoSaveProduct(${p.id})" class="w-16 border rounded-lg text-center p-1 font-bold dark:bg-slate-800 dark:text-white"></td>
+                <td class="p-2 text-center"><input type="number" id="inline-avail-${p.id}" value="${p.avail}" ${!isAdmin?'readonly':''} onchange="autoSaveProduct(${p.id})" class="w-16 border rounded-lg text-center p-1 font-bold ${p.avail <= 5 ? 'text-rose-500 bg-rose-50' : ''} dark:bg-slate-800 dark:text-white"></td>
+                <td class="p-2 text-right"><input type="number" step="0.01" id="inline-price-${p.id}" value="${p.price}" ${!isAdmin?'readonly':''} onchange="autoSaveProduct(${p.id})" class="w-20 border rounded-lg text-right p-1 font-bold dark:bg-slate-800 dark:text-white"></td>
+                <td class="p-3 text-center">${isAdmin ? `<button onclick="deleteProductFromStock(${p.id})" class="text-rose-600 hover:text-rose-800 cursor-pointer text-sm">🗑️</button>` : '🔒'}</td>
             </tr>
         `).join('');
     }
