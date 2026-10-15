@@ -1,28 +1,82 @@
-body {
-    font-family: 'Kantumruy Pro', 'Battambang', sans-serif;
+:root {
+    --primary-gradient: linear-gradient(135deg, #6366f1 0%, #4338ca 100%);
+    --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
 }
 
-/* Custom scrollbar សម្រាប់ភាពស្អាតបាត */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+body { 
+    font-family: 'Kantumruy Pro', 'Battambang', sans-serif; 
+    background-color: #f8fafc;
+    color: #0f172a;
+    transition: background-color 0.3s, color 0.3s; 
 }
 
-::-webkit-scrollbar-track {
-    background: #f1f5f9;
+.dark body {
+    background-color: #030712;
+    color: #f8fafc;
 }
 
-::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 4px;
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+.dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; }
+
+/* Modern Cards */
+.vck-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: var(--card-shadow);
+    border-radius: 1.5rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.vck-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 30px -10px rgba(99, 102, 241, 0.1);
+}
+.dark .vck-card {
+    background: #0f172a;
+    border-color: #1e293b;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+/* Animations */
+@keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(8px); } 
+    to { opacity: 1; transform: translateY(0); } 
 }
+.animate-fade-in { animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
-.active-menu {
+/* Inputs */
+.vck-input {
+    background-color: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    transition: all 0.2s ease;
+}
+.vck-input:focus {
+    background-color: #ffffff;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+.dark .vck-input {
     background-color: #1e293b;
+    border-color: #334155;
     color: #ffffff;
-    border-left: 4px solid #6366f1;
+}
+.dark .vck-input:focus {
+    background-color: #0f172a;
+    border-color: #818cf8;
+}
+
+/* Primary Buttons */
+.vck-btn-primary {
+    background: var(--primary-gradient);
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+    transition: all 0.2s ease;
+}
+.vck-btn-primary:hover {
+    opacity: 0.95;
+    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+    transform: translateY(-1px);
+}
+.vck-btn-primary:active {
+    transform: scale(0.98);
 }
