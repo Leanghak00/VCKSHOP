@@ -79,9 +79,10 @@
                 <button id="btn-stock" onclick="switchTab('stock')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer transition-all"><span>📦</span> គ្រប់គ្រងឃ្លាំងស្តុក</button>
                 <button id="btn-attendance" onclick="switchTab('attendance')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer text-amber-300 transition-all"><span>⏰</span> ស្កេនវត្តមានធ្វើការ</button>
                 <button id="btn-customer-history" onclick="switchTab('customer-history')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer text-indigo-300 transition-all"><span>👥</span> ប្រវត្តិទិញអតិថិជន</button>
+                <button id="btn-car-contacts" onclick="switchTab('car-contacts')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer text-teal-300 transition-all"><span>🚐</span> លេខទូរស័ព្ទឡាន/ចំណត</button>
             </nav>
 
-            <!-- User Footer (បង្ហាញជានិច្ចទាំងលើទូរស័ព្ទ និងកុំព្យូទ័រ) -->
+            <!-- User Footer -->
             <div id="userFooter" class="flex p-4 border-t border-slate-800 bg-slate-950/80 items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div id="userAvatar" class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-md">U</div>
@@ -333,6 +334,59 @@
                             <div class="vck-card p-5"><p class="text-[10px] font-extrabold text-slate-400 uppercase">ចំនួនដង</p><h4 id="custHistoryTotalInvoices" class="text-xl font-black text-indigo-600 mt-1">0 វិក្កយបត្រ</h4></div>
                         </div>
                         <div class="vck-card overflow-hidden"><table class="w-full text-left"><thead><tr class="bg-slate-50 dark:bg-slate-800/80 text-[11px] font-bold text-slate-400 border-b dark:border-slate-800"><th class="p-4 pl-6">កាលបរិច្ឆេទ</th><th class="p-4">លេខវិក្កយបត្រ</th><th class="p-4">ទំនិញ</th><th class="p-4">ទីតាំង</th><th class="p-4 text-right">សរុប</th><th class="p-4 text-center">សកម្មភាព</th></tr></thead><tbody id="custHistoryTableBody"></tbody></table></div>
+                    </div>
+                </section>
+
+                <!-- CAR CONTACTS TAB (NEW) -->
+                <section id="tab-car-contacts" class="tab-content hidden space-y-6">
+                    <div class="vck-card p-6 space-y-4">
+                        <h3 class="font-black text-sm border-b dark:border-slate-800 pb-3">🚐 បញ្ចូលលេខទូរស័ព្ទឡាន និងចំណតថ្មី</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">ខេត្តគោលដៅ *</label>
+                                <input type="text" id="carProvince" placeholder="ឧ. បាត់ដំបង, សៀមរាប, កំពត..." class="vck-input border p-3 rounded-2xl text-xs font-bold w-full">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">ឈ្មោះចំណតនៅភ្នំពេញ *</label>
+                                <input type="text" id="carStation" placeholder="ឧ. ចំណតផ្សារដើមគ, គីរីរម្យ..." class="vck-input border p-3 rounded-2xl text-xs font-bold w-full">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">លេខទូរស័ព្ទអ្នកបើកបរ/ឡាន *</label>
+                                <input type="text" id="carPhone" placeholder="ឧ. 012 345 678 / 098 765 432" class="vck-input border p-3 rounded-2xl text-xs font-bold w-full">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <input type="text" id="carDriverName" placeholder="ឈ្មោះអ្នកបើកបរ ឬ ឈ្មោះឡាន (បើមាន)" class="vck-input border p-3 rounded-2xl text-xs font-bold">
+                            <input type="text" id="carNote" placeholder="ចំណាំបន្ថែម (ឧ. ចេញដំណើរម៉ោង ២ រសៀល)" class="vck-input border p-3 rounded-2xl text-xs font-bold">
+                        </div>
+                        <div class="flex justify-end">
+                            <button onclick="saveCarContact()" class="vck-btn-primary text-white px-6 py-3 rounded-2xl text-xs font-bold cursor-pointer shadow-md">💾 រក្សាទុកលេខឡាន</button>
+                        </div>
+                    </div>
+
+                    <div class="vck-card overflow-hidden">
+                        <div class="p-5 border-b dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex flex-col sm:flex-row justify-between items-center gap-4">
+                            <h3 class="font-black text-sm">📋 បញ្ជីលេខទូរស័ព្ទឡាន និងចំណតតាមខេត្ត</h3>
+                            <input type="text" id="searchCarInput" onkeyup="searchCarFunction()" placeholder="ស្វែងរកតាមខេត្ត, ចំណត ឬ លេខទូរស័ព្ទ..." class="vck-input border px-4 py-2.5 rounded-2xl text-xs font-bold w-full sm:w-80">
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="bg-slate-50 dark:bg-slate-800/80 text-[11px] font-bold text-slate-400 border-b dark:border-slate-800">
+                                        <th class="p-4 pl-6 text-center">ល.រ</th>
+                                        <th class="p-4">ខេត្តគោលដៅ</th>
+                                        <th class="p-4">ចំណតនៅភ្នំពេញ</th>
+                                        <th class="p-4">ឈ្មោះឡាន / អ្នកបើកបរ</th>
+                                        <th class="p-4">លេខទូរស័ព្ទ</th>
+                                        <th class="p-4">ចំណាំ</th>
+                                        <th class="p-4 text-center">សកម្មភាព</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="carTableBody">
+                                    <tr><td colspan="7" class="p-6 text-center text-xs text-slate-400">កំពុងទាញទិន្នន័យ...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </section>
             </div>
