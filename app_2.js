@@ -12,7 +12,7 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 const auth = firebase.auth();
 
-let productsData = [], currentUser = null, salesData = [], deliveryData = [], currentInvoiceItems = [], attendanceData = [];
+let productsData = [], currentUser = null, salesData = [], deliveryData = [], currentInvoiceItems = [], attendanceData = [], carContactsData = [];
 let myChartInstance = null, comparisonChartInstance = null, locationChartInstance = null, qrcodeInstance = null;
 let currentInvoiceGrandTotal = 0;
 let html5QrCodeScanner = null, html5AttendanceScanner = null;
@@ -154,7 +154,7 @@ async function handleLogin() {
         initSystemAfterLogin();
     } catch (e) {
         errorEl.innerText = "⚠️ ឈ្មោះអ្នកប្រើប្រាស់ ឬ លេខសម្ងាត់មិនត្រឹមត្រូវ!";
-        errorEl.classList.remove('hidden');
+        errorEl.classList.add('hidden');
     }
 }
 
@@ -190,7 +190,15 @@ function switchTab(tabId) {
     document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('bg-indigo-600', 'text-white'));
     document.getElementById('btn-' + tabId)?.classList.add('bg-indigo-600', 'text-white');
 
-    const titles = { 'dashboard': '📊 ផ្ទាំងគ្រប់គ្រងទូទៅ', 'sales': '📄 វិក្កយបត្រលក់', 'delivery': '🚚 ប្រព័ន្ធដឹកជញ្ជូន', 'stock': '📦 ឃ្លាំងស្តុក', 'attendance': '⏰ ស្កែនវត្តមាន', 'customer-history': '👥 ប្រវត្តិអតិថិជន' };
+    const titles = { 
+        'dashboard': '📊 ផ្ទាំងគ្រប់គ្រងទូទៅ', 
+        'sales': '📄 វិក្កយបត្រលក់', 
+        'delivery': '🚚 ប្រព័ន្ធដឹកជញ្ជូន', 
+        'stock': '📦 ឃ្លាំងស្តុក', 
+        'attendance': '⏰ ស្កែនវត្តមាន', 
+        'customer-history': '👥 ប្រវត្តិអតិថិជន',
+        'car-contacts': '🚐 លេខទូរស័ព្ទឡាន និងចំណត'
+    };
     document.getElementById('pageTitle').innerText = titles[tabId] || 'VCK System';
 
     if (window.innerWidth < 768) {
@@ -203,6 +211,7 @@ function listenToFirebaseData() {
     database.ref('sales').on('value', snap => { salesData = snap.val() ? Object.values(snap.val()) : []; renderAll(); });
     database.ref('deliveries').on('value', snap => { deliveryData = snap.val() ? Object.values(snap.val()) : []; renderAll(); });
     database.ref('attendance').on('value', snap => { attendanceData = snap.val() ? Object.values(snap.val()) : []; if (currentUser?.role === 'Admin') renderAttendanceTable(); });
+    database.ref('carContacts').on('value', snap => { carContactsData = snap.val() ? Object.values(snap.val()) : []; renderCarContactsTable(); });
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -467,3 +476,84 @@ function viewInvoice(id) {
 
 function closeInvoiceModal() { document.getElementById('invoiceModal').classList.add('hidden'); }
 function toggleMobileMenu() { document.getElementById('sidebarMenu').classList.toggle('hidden'); }
+
+// --- មុខងារថ្មី៖ រក្សាទុករៀបចំលេខទូរស័ព្ទឡាន និងចំណតតាមខេត្ត ---
+async function saveCarContact() {
+    const province = document.getElementById('carProvince').value.trim();
+    const station = document.getElementById('carStation').value.trim();
+    const phone = document.getElementById('carPhone').value.trim();
+    const driverName = document.getElementById('carDriverName').value.trim() || '-';
+    const note = document.getElementById('carNote').value.trim() || '-';
+
+    if (!province || !station || !phone) {
+        alert("⚠️ សូមបំពេញខេត្ត ចំណត និងលេខទូរស័ព្ទឱ្យបានគ្រប់គ្រាន់!");
+        return;
+    }
+
+    const id = Date.now();
+    try {
+        await database.ref('carContacts/' + id).set({
+            id,
+            province,
+            station,
+            phone,
+            driverName,
+            note,
+            createdAt: new Date().toISOString().split('T')[0]
+        });
+
+        alert("🎉 រក្សាទុកលេខទូរស័ព្ទឡានជោគជ័យ!");
+        ['carProvince', 'carStation', 'carPhone', 'carDriverName', 'carNote'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+    } catch (error) {
+        alert("❌ មានបញ្ហាក្នុងការរក្សាទុក: " + error.message);
+    }
+}
+
+function renderCarContactsTable(listToRender = null) {
+    const tbody = document.getElementById('carTableBody');
+    if (!tbody) return;
+
+    const data = listToRender || carContactsData;
+
+    tbody.innerHTML = data.length === 0 ? 
+        `<tr><td colspan="7" class="p-6 text-center text-xs text-slate-400">គ្មានទិន្នន័យលេខឡាន/ចំណតទេ</td></tr>` : 
+        data.map((car, i) => `
+            <tr class="text-xs border-b dark:border-slate-800">
+                <td class="p-4 pl-6 text-center font-bold text-slate-400">${i + 1}</td>
+                <td class="p-4 font-bold text-indigo-600">${car.province}</td>
+                <td class="p-4 font-medium">${car.station}</td>
+                <td class="p-4">${car.driverName}</td>
+                <td class="p-4 font-bold text-emerald-600">
+                    <a href="tel:${car.phone}" class="hover:underline flex items-center gap-1">📞 ${car.phone}</a>
+                </td>
+                <td class="p-4 text-slate-500">${car.note}</td>
+                <td class="p-4 text-center">
+                    <button onclick="deleteCarContact(${car.id})" class="text-rose-600 hover:scale-110 cursor-pointer p-1" title="លុប">🗑️</button>
+                </td>
+            </tr>
+        `).join('');
+}
+
+function searchCarFunction() {
+    const filter = document.getElementById("searchCarInput").value.toLowerCase();
+    const filtered = carContactsData.filter(car => 
+        car.province.toLowerCase().includes(filter) ||
+        car.station.toLowerCase().includes(filter) ||
+        car.phone.toLowerCase().includes(filter) ||
+        car.driverName.toLowerCase().includes(filter) ||
+        car.note.toLowerCase().includes(filter)
+    );
+    renderCarContactsTable(filtered);
+}
+
+function deleteCarContact(id) {
+    if (confirm("⚠️ តើអ្នកពិតជាចង់លុបព័ត៌មានឡាននេះមែនទេ?")) {
+        database.ref('carContacts/' + id).remove().then(() => {
+            alert("🗑️ បានលុបដោយជោគជ័យ!");
+        }).catch(err => {
+            alert("❌ កំហុសក្នុងការលុប: " + err.message);
+        });
+    }
+}
