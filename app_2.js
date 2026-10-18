@@ -71,7 +71,6 @@ async function getTelegramChatId() {
     return null;
 }
 
-// 🚀 Telegram Attendance Alert Function
 async function sendTelegramAttendanceAlert(staffName, type, time, lateReason) {
     const chatId = await getTelegramChatId();
     if (!chatId) return;
@@ -209,11 +208,40 @@ async function handleLogin() {
         const res = await auth.signInWithEmailAndPassword(emailFormat, passIn);
         const staff = STAFF_ACCOUNTS[userIn];
         currentUser = { name: staff ? staff.name : userIn, role: staff ? staff.role : 'Admin', email: res.user.email };
+        localStorage.setItem('vck_current_user', JSON.stringify(currentUser));
         errorEl.classList.add('hidden');
         initSystemAfterLogin();
     } catch (e) {
         errorEl.innerText = "⚠️ ឈ្មោះអ្នកប្រើប្រាស់ ឬ លេខសម្ងាត់មិនត្រឹមត្រូវ!";
         errorEl.classList.remove('hidden');
+    }
+}
+
+async function handleLogout() {
+    if (confirm("⚠️ តើអ្នកពិតជាចង់ចាកចេញពីប្រព័ន្ធមែនទេ?")) {
+        try { 
+            await auth.signOut(); 
+            localStorage.removeItem('vck_current_user');
+            location.reload(); 
+        } catch (e) { 
+            localStorage.removeItem('vck_current_user');
+            location.reload(); 
+        }
+    }
+}
+
+function handleSwitchAccount() {
+    if (confirm("🔄 តើអ្នកចង់ប្ដូរគណនីប្រើប្រាស់ផ្សេងមែនទេ?")) {
+        auth.signOut().then(() => {
+            localStorage.removeItem('vck_current_user');
+            document.getElementById('main-application')?.classList.add('hidden');
+            document.getElementById('login-screen')?.classList.remove('hidden');
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            document.getElementById('loginError').classList.add('hidden');
+        }).catch(() => {
+            location.reload();
+        });
     }
 }
 
@@ -240,10 +268,6 @@ function initSystemAfterLogin() {
     listenToFirebaseData();
     switchTab('dashboard');
     refreshIcons();
-}
-
-async function handleLogout() {
-    try { await auth.signOut(); location.reload(); } catch (e) { location.reload(); }
 }
 
 function switchTab(tabId) {
@@ -397,8 +421,6 @@ async function saveAttendanceRecord(type) {
     if (attendanceData.some(a => a.staffName === currentUser.name && a.date === date && a.type === type)) return alert(`⚠️ បាន ${type} រួចរាល់ហើយថ្ងៃនេះ!`);
     
     await database.ref('attendance').push({ staffName: currentUser.name, type, date, time, lateReason: reason, timestamp: Date.now() });
-    
-    // 🚀 បញ្ជូនដំណឹងទៅ Telegram ភ្លាមៗ
     await sendTelegramAttendanceAlert(currentUser.name, type, time, reason);
 
     alert(`🎉 ${currentUser.name} បាន ${type} ជោគជ័យ!`);
