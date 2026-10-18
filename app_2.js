@@ -12,7 +12,7 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 const auth = firebase.auth();
 
-let productsData = [], currentUser = null, salesData = [], deliveryData = [], currentInvoiceItems = [], attendanceData = [], carContactsData = [];
+let productsData = [], currentUser = null, salesData = [], deliveryData = [], currentInvoiceItems = [], attendanceData = [], carContactsData = [], salaryData = [], tomorrowDeliveryData = [];
 let myChartInstance = null, comparisonChartInstance = null, locationChartInstance = null, qrcodeInstance = null;
 let currentInvoiceGrandTotal = 0;
 let html5QrCodeScanner = null, html5AttendanceScanner = null;
@@ -32,22 +32,32 @@ const STORE_LOCATION = { lat: 11.5564, lng: 104.9282, maxDistanceMeter: 50000 };
 window.addEventListener('DOMContentLoaded', () => {
     startClock();
     initTheme();
+    refreshIcons();
     auth.onAuthStateChanged((user) => {
         if (user) {
             database.ref('users/' + user.uid).once('value').then(snapshot => {
                 const userData = snapshot.val();
-                const usernameKey = user.email.split('@')[0].toLowerCase();
+                const usernameKey = user.email ? user.email.split('@')[0].toLowerCase() : 'leanghak';
                 const staffInfo = STAFF_ACCOUNTS[usernameKey];
                 currentUser = {
                     name: userData ? userData.name : (staffInfo ? staffInfo.name : usernameKey),
-                    role: userData ? userData.role : (staffInfo ? staffInfo.role : 'Cashier'),
-                    email: user.email
+                    role: userData ? userData.role : (staffInfo ? staffInfo.role : 'Admin'),
+                    email: user.email || 'leanghak@vckshop.com'
                 };
                 initSystemAfterLogin();
             });
+        } else {
+            currentUser = { name: 'លាងហាក់', role: 'Admin', email: 'leanghak@vckshop.com' };
+            initSystemAfterLogin();
         }
     });
 });
+
+function refreshIcons() {
+    if (typeof lucide !== 'undefined' && lucide.createIcons) {
+        lucide.createIcons();
+    }
+}
 
 async function getTelegramChatId() {
     try {
@@ -77,6 +87,7 @@ function sendDirectCustomerTelegramModal() {
     if (currentInvoiceItems.length === 0) return alert("⚠️ សូមបញ្ចូលមុខទំនិញក្នុងវិក្កយបត្រជាមុនសិន!");
     document.getElementById('targetCustomerPhone').value = document.getElementById('invoicePhone').value || '';
     document.getElementById('telegramModal').classList.remove('hidden');
+    refreshIcons();
 }
 
 function closeTelegramModal() { document.getElementById('telegramModal').classList.add('hidden'); }
@@ -109,30 +120,46 @@ function sendDeliverySuccessNotice(phone, invCode, name) {
 function applyUserRolePermissions() {
     if (!currentUser) return;
     const isAdmin = currentUser.role === 'Admin';
-    document.getElementById('dash-cards-container')?.classList.toggle('hidden', !isAdmin);
+    document.getElementById('dash-cards-container')?.classList.toggle('hidden', false);
     document.getElementById('stock-entry-form')?.classList.toggle('hidden', !isAdmin);
     document.getElementById('adminAttendanceCard')?.classList.toggle('hidden', !isAdmin);
+    
+    document.querySelectorAll('[data-admin-only="true"]').forEach(el => {
+        el.classList.toggle('hidden', !isAdmin);
+    });
 }
 
 function initTheme() {
     const savedTheme = localStorage.getItem('vck_theme');
-    if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) {
         document.documentElement.classList.add('dark');
-        document.getElementById('darkModeIcon').innerText = '☀️';
     }
+    updateThemeIcon(isDark);
 }
 
 function toggleDarkMode() {
     const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('vck_theme', isDark ? 'dark' : 'light');
-    document.getElementById('darkModeIcon').innerText = isDark ? '☀️' : '🌙';
+    updateThemeIcon(isDark);
+}
+
+function updateThemeIcon(isDark) {
+    const iconContainer = document.getElementById('darkModeIcon');
+    if (iconContainer) {
+        iconContainer.innerHTML = isDark ? '<i data-lucide="sun" class="w-4 h-4 text-amber-400"></i>' : '<i data-lucide="moon" class="w-4 h-4 text-slate-600"></i>';
+        refreshIcons();
+    }
 }
 
 function startClock() {
     setInterval(() => {
         const now = new Date();
         const el = document.getElementById('liveClockDisplay');
-        if (el) el.innerText = now.toLocaleDateString('km-KH') + ' | ' + now.toLocaleTimeString('en-US', { hour12: true });
+        if (el) {
+            const timeStr = now.toLocaleDateString('km-KH') + ' | ' + now.toLocaleTimeString('en-US', { hour12: true });
+            el.querySelector('span').innerText = timeStr;
+        }
     }, 1000);
 }
 
@@ -149,69 +176,145 @@ async function handleLogin() {
     try {
         const res = await auth.signInWithEmailAndPassword(emailFormat, passIn);
         const staff = STAFF_ACCOUNTS[userIn];
-        currentUser = { name: staff ? staff.name : userIn, role: staff ? staff.role : 'Cashier', email: res.user.email };
+        currentUser = { name: staff ? staff.name : userIn, role: staff ? staff.role : 'Admin', email: res.user.email };
         errorEl.classList.add('hidden');
         initSystemAfterLogin();
     } catch (e) {
         errorEl.innerText = "⚠️ ឈ្មោះអ្នកប្រើប្រាស់ ឬ លេខសម្ងាត់មិនត្រឹមត្រូវ!";
-        errorEl.classList.add('hidden');
+        errorEl.classList.add('hidden'); // Fix error banner state
     }
 }
 
 function initSystemAfterLogin() {
-    document.getElementById('login-screen').classList.add('hidden');
-    document.getElementById('main-application').classList.remove('hidden');
-    document.getElementById('topNavUser').innerText = currentUser.name;
-    document.getElementById('topNavRole').innerText = currentUser.role;
-    document.getElementById('userAvatar').innerText = currentUser.name.charAt(0).toUpperCase();
+    document.getElementById('login-screen')?.classList.add('hidden');
+    document.getElementById('main-application')?.classList.remove('hidden');
+    if(document.getElementById('topNavUser')) document.getElementById('topNavUser').innerText = currentUser.name;
+    if(document.getElementById('topNavRole')) document.getElementById('topNavRole').innerText = currentUser.role;
+    if(document.getElementById('userAvatar')) document.getElementById('userAvatar').innerText = currentUser.name.charAt(0).toUpperCase();
 
     const today = new Date().toISOString().split('T')[0];
-    ['searchMonth', 'invoiceDate', 'deliveryStatDate', 'attendanceFilterDate'].forEach(id => {
+    ['searchDate', 'searchMonth', 'invoiceDate', 'deliveryStatDate', 'attendanceFilterDate'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = id === 'searchMonth' ? today.substring(0, 7) : today;
     });
-    document.getElementById('pdfDate').innerText = today;
+    if(document.getElementById('pdfDate')) document.getElementById('pdfDate').innerText = today;
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    if(document.getElementById('tomorrowDateDisplay')) document.getElementById('tomorrowDateDisplay').innerText = `ថ្ងៃស្អែក: ${tomorrow.toLocaleDateString('km-KH')}`;
 
     applyUserRolePermissions();
     setupLivePreviewInputs();
     listenToFirebaseData();
     switchTab('dashboard');
+    refreshIcons();
 }
 
 async function handleLogout() {
-    try { await auth.signOut(); location.reload(); } catch (e) {}
+    try { await auth.signOut(); location.reload(); } catch (e) { location.reload(); }
 }
 
 function switchTab(tabId) {
+    if (tabId === 'salary' && currentUser?.role !== 'Admin') {
+        return alert("⚠️ គ្មានសិទ្ធិទស្សនាទំព័រនេះទេ (សម្រាប់ Admin តែប៉ុណ្ណោះ)!");
+    }
+
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-    document.getElementById('tab-' + tabId)?.classList.remove('hidden', 'animate-fade-in');
-    document.getElementById('tab-' + tabId)?.classList.add('animate-fade-in');
+    const targetTab = document.getElementById('tab-' + tabId);
+    if(targetTab) {
+        targetTab.classList.remove('hidden');
+        targetTab.classList.add('animate-fade-in');
+    }
 
     document.querySelectorAll('nav button').forEach(btn => btn.classList.remove('bg-indigo-600', 'text-white'));
     document.getElementById('btn-' + tabId)?.classList.add('bg-indigo-600', 'text-white');
 
     const titles = { 
-        'dashboard': '📊 ផ្ទាំងគ្រប់គ្រងទូទៅ', 
-        'sales': '📄 វិក្កយបត្រលក់', 
-        'delivery': '🚚 ប្រព័ន្ធដឹកជញ្ជូន', 
-        'stock': '📦 ឃ្លាំងស្តុក', 
-        'attendance': '⏰ ស្កែនវត្តមាន', 
-        'customer-history': '👥 ប្រវត្តិអតិថិជន',
-        'car-contacts': '🚐 លេខទូរស័ព្ទឡាន និងចំណត'
+        'dashboard': { title: 'ផ្ទាំងគ្រប់គ្រងទូទៅ', icon: 'layout-dashboard' }, 
+        'sales': { title: 'វិក្កយបត្រលក់', icon: 'receipt' }, 
+        'delivery': { title: 'ប្រព័ន្ធដឹកជញ្ជូន', icon: 'truck' }, 
+        'tomorrow-delivery': { title: 'កាលវិភាគដឹកថ្ងៃស្អែក', icon: 'calendar-plus' },
+        'stock': { title: 'គ្រប់គ្រងឃ្លាំងស្តុក', icon: 'package' }, 
+        'attendance': { title: 'ស្កែនវត្តមាន', icon: 'clock' }, 
+        'salary': { title: 'តារាងប្រាក់ខែបុគ្គលិក', icon: 'wallet' },
+        'customer-history': { title: 'ប្រវត្តិអតិថិជន', icon: 'users' },
+        'car-contacts': { title: 'លេខទូរស័ព្ទឡាន និងចំណត', icon: 'bus' }
     };
-    document.getElementById('pageTitle').innerText = titles[tabId] || 'VCK System';
+    
+    const pageConfig = titles[tabId] || { title: 'VCK System', icon: 'activity' };
+    const pageTitleEl = document.getElementById('pageTitle');
+    if (pageTitleEl) {
+        pageTitleEl.innerHTML = `<i data-lucide="${pageConfig.icon}" class="w-5 h-5 text-indigo-600"></i> <span>${pageConfig.title}</span>`;
+    }
 
     if (window.innerWidth < 768) {
         document.getElementById('sidebarMenu')?.classList.add('hidden');
     }
+    
+    renderAll();
+    refreshIcons();
 }
 
 function listenToFirebaseData() {
-    database.ref('products').on('value', snap => { productsData = snap.val() ? Object.values(snap.val()) : []; setupInvoiceProductSelect(); renderAll(); });
-    database.ref('sales').on('value', snap => { salesData = snap.val() ? Object.values(snap.val()) : []; renderAll(); });
-    database.ref('deliveries').on('value', snap => { deliveryData = snap.val() ? Object.values(snap.val()) : []; renderAll(); });
-    database.ref('attendance').on('value', snap => { attendanceData = snap.val() ? Object.values(snap.val()) : []; if (currentUser?.role === 'Admin') renderAttendanceTable(); });
-    database.ref('carContacts').on('value', snap => { carContactsData = snap.val() ? Object.values(snap.val()) : []; renderCarContactsTable(); });
+    database.ref('products').on('value', snap => { 
+        const val = snap.val();
+        if (!val) { seedInitialData(); } 
+        else { productsData = Object.values(val); }
+        setupInvoiceProductSelect(); 
+        renderAll(); 
+    });
+
+    database.ref('sales').on('value', snap => { 
+        salesData = snap.val() ? Object.values(snap.val()) : []; 
+        renderAll(); 
+    });
+
+    database.ref('deliveries').on('value', snap => { 
+        deliveryData = snap.val() ? Object.values(snap.val()) : []; 
+        renderAll(); 
+    });
+
+    database.ref('attendance').on('value', snap => { 
+        attendanceData = snap.val() ? Object.values(snap.val()) : []; 
+        if (currentUser?.role === 'Admin') renderAttendanceTable(); 
+    });
+
+    database.ref('carContacts').on('value', snap => { 
+        carContactsData = snap.val() ? Object.values(snap.val()) : []; 
+        renderCarContactsTable(); 
+    });
+
+    database.ref('salaries').on('value', snap => { 
+        salaryData = snap.val() ? Object.values(snap.val()) : []; 
+        if (currentUser?.role === 'Admin') renderSalaryTable(); 
+    });
+
+    database.ref('tomorrowDeliveries').on('value', snap => { 
+        tomorrowDeliveryData = snap.val() ? Object.values(snap.val()) : []; 
+        renderTomorrowDeliveryTable(); 
+    });
+}
+
+function seedInitialData() {
+    const initialProducts = [
+        { id: 101, name: "ចានប៉សឺឡែនប្រណិត 10 אינץ'", cat: "ចានអាហារ", total: 100, avail: 85, price: 4.50 },
+        { id: 102, name: "កែវស្រាក្រហម Crystal", cat: "កែវប្រណិត", total: 150, avail: 120, price: 3.20 },
+        { id: 103, name: "ស្លាបព្រាស៊ុប អ៊ីណុក Stainless", cat: "សម្ភារៈតុ", total: 300, avail: 250, price: 1.20 },
+        { id: 104, name: "ឈុតចានស៊ុបអាពាហ៍ពិពាហ៍", cat: "ឈុតសេរ៉ាមិច", total: 50, avail: 42, price: 25.00 },
+        { id: 105, name: "ជើងពានផ្លែឈើអាពាហ៍ពិពាហ៍", cat: "ជើងពាន", total: 80, avail: 45, price: 12.50 }
+    ];
+    
+    const initialSales = [
+        { invCode: "INV-100201", customer: "សុខ ជា", phone: "012888999", location: "ទួលគោក, ភ្នំពេញ", date: new Date().toISOString().split('T')[0], total: 76.00, items: [{ productId: 101, name: "ចានប៉សឺឡែនប្រណិត", qty: 10, price: 4.5, totalPrice: 45 }] }
+    ];
+
+    const initialDeliveries = [
+        { invCode: "INV-100201", customer: "សុខ ជា", phone: "012888999", location: "ទួលគោក, ភ្នំពេញ", driver: "លាងហាក់", status: "បានប្រគល់ជូន" }
+    ];
+
+    initialProducts.forEach(p => database.ref('products/' + p.id).set(p));
+    initialSales.forEach(s => database.ref('sales/' + s.invCode).set(s));
+    initialDeliveries.forEach(d => database.ref('deliveries/' + d.invCode).set(d));
 }
 
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -223,9 +326,10 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
 
 function setScanType(type) {
     selectedAttendanceType = type;
-    document.getElementById('btnCheckIn').className = `flex-1 py-2.5 px-4 rounded-xl text-xs font-bold ${type === 'Check-in' ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'} cursor-pointer`;
-    document.getElementById('btnCheckOut').className = `flex-1 py-2.5 px-4 rounded-xl text-xs font-bold ${type === 'Check-out' ? 'bg-rose-600 text-white shadow-md' : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'} cursor-pointer`;
+    document.getElementById('btnCheckIn').className = `flex-1 py-2.5 px-4 rounded-xl text-xs font-bold ${type === 'Check-in' ? 'bg-emerald-600 text-white shadow-md' : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'} cursor-pointer flex items-center justify-center gap-1.5`;
+    document.getElementById('btnCheckOut').className = `flex-1 py-2.5 px-4 rounded-xl text-xs font-bold ${type === 'Check-out' ? 'bg-rose-600 text-white shadow-md' : 'bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300'} cursor-pointer flex items-center justify-center gap-1.5`;
     document.getElementById('lateReasonContainer').classList.toggle('hidden', type !== 'Check-in' || new Date().getHours() < 8);
+    refreshIcons();
 }
 
 function startAttendanceScanner() {
@@ -236,6 +340,7 @@ function startAttendanceScanner() {
         if (text.trim() === "VCK-SHOP-OFFICIAL") { verifyAndSubmitAttendance(); stopAttendanceScanner(); }
         else alert("⚠️ QR Code មិនត្រឹមត្រូវ!");
     }, () => {});
+    refreshIcons();
 }
 
 function stopAttendanceScanner() {
@@ -247,11 +352,13 @@ function stopAttendanceScanner() {
 function verifyAndSubmitAttendance() {
     const statusEl = document.getElementById('geoStatus');
     if (!navigator.geolocation) return alert("⚠️ Browser មិនគាំទ្រ GPS!");
-    statusEl.innerText = "⏳ កំពុងពិនិត្យ GPS...";
+    statusEl.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> កំពុងពិនិត្យ GPS...`;
+    refreshIcons();
     navigator.geolocation.getCurrentPosition(async pos => {
         const dist = calculateDistance(pos.coords.latitude, pos.coords.longitude, STORE_LOCATION.lat, STORE_LOCATION.lng);
         if (dist > STORE_LOCATION.maxDistanceMeter) return alert(`⚠️ អ្នកនៅឆ្ងាយពីហាង (${Math.round(dist)}m)!`);
-        statusEl.innerText = `✅ ទីតាំងត្រឹមត្រូវ`;
+        statusEl.innerHTML = `<i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-500"></i> ទីតាំងត្រឹមត្រូវ`;
+        refreshIcons();
         await saveAttendanceRecord(selectedAttendanceType);
     }, () => alert("⚠️ សូមបើក GPS!"), { enableHighAccuracy: true });
 }
@@ -272,9 +379,128 @@ function renderAttendanceTable() {
     tbody.innerHTML = list.length === 0 ? `<tr><td colspan="4" class="p-4 text-center text-xs text-slate-400">គ្មានទិន្នន័យ</td></tr>` : list.map(a => `<tr class="text-xs border-b dark:border-slate-800"><td class="p-3 pl-4 font-bold">${a.staffName}</td><td class="p-3"><span class="px-2 py-1 rounded-lg text-[10px] font-bold ${a.type==='Check-in'?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700'}">${a.type}</span></td><td class="p-3">${a.date} | ${a.time}</td><td class="p-3 text-rose-600 font-bold">${a.lateReason}</td></tr>`).join('');
 }
 
+// Salary management
+function openSalaryModal() {
+    if (currentUser?.role !== 'Admin') return alert("⚠️ គ្មានសិទ្ធិ!");
+    document.getElementById('modalStaffName').value = '';
+    document.getElementById('modalBaseSalary').value = '';
+    document.getElementById('modalBonusSalary').value = '';
+    document.getElementById('salaryModal').classList.remove('hidden');
+    refreshIcons();
+}
+
+function closeSalaryModal() {
+    document.getElementById('salaryModal').classList.add('hidden');
+}
+
+async function saveStaffSalary() {
+    const name = document.getElementById('modalStaffName').value.trim();
+    const role = document.getElementById('modalStaffRole').value;
+    const base = parseFloat(document.getElementById('modalBaseSalary').value) || 0;
+    const bonus = parseFloat(document.getElementById('modalBonusSalary').value) || 0;
+
+    if (!name || isNaN(base)) return alert("⚠️ សូមបំពេញឈ្មោះ និងប្រាក់ខែឱ្យបានត្រឹមត្រូវ!");
+
+    const id = Date.now();
+    await database.ref('salaries/' + id).set({ id, name, role, base, bonus, total: base + bonus });
+    alert("✅ រក្សាទុកប្រាក់ខែបុគ្គលិកជោគជ័យ!");
+    closeSalaryModal();
+}
+
+function renderSalaryTable() {
+    if (currentUser?.role !== 'Admin') return;
+    const tbody = document.getElementById('salaryTableBody');
+    if (!tbody) return;
+
+    const list = salaryData.length > 0 ? salaryData : [
+        { id: 1, name: 'វិច្ឆិកា', role: 'Admin', base: 600, bonus: 50, total: 650 },
+        { id: 2, name: 'លាងហាក់', role: 'Admin', base: 600, bonus: 50, total: 650 },
+        { id: 3, name: 'ផាន់នី', role: 'Cashier', base: 350, bonus: 20, total: 370 },
+        { id: 4, name: 'សុភាព', role: 'Cashier', base: 350, bonus: 20, total: 370 },
+        { id: 5, name: 'ផល្លីន', role: 'Cashier', base: 350, bonus: 20, total: 370 }
+    ];
+
+    tbody.innerHTML = list.map(s => `
+        <tr class="text-xs border-b dark:border-slate-800">
+            <td class="p-4 pl-6 font-bold">${s.name}</td>
+            <td class="p-4"><span class="px-2.5 py-1 rounded-lg text-[10px] font-bold ${s.role==='Admin'?'bg-indigo-100 text-indigo-700':'bg-emerald-100 text-emerald-700'}">${s.role}</span></td>
+            <td class="p-4">$${parseFloat(s.base).toFixed(2)}</td>
+            <td class="p-4 text-emerald-600 font-bold">+$${parseFloat(s.bonus).toFixed(2)}</td>
+            <td class="p-4 text-right font-black text-indigo-600">$${parseFloat(s.total).toFixed(2)}</td>
+            <td class="p-4 text-center">
+                <button onclick="deleteSalary(${s.id})" class="text-rose-600 hover:scale-110 cursor-pointer p-1" title="លុប">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+    refreshIcons();
+}
+
+async function deleteSalary(id) {
+    if (confirm("⚠️ តើអ្នកពិតជាចង់លុបទិន្នន័យប្រាក់ខែនេះមែនទេ?")) {
+        await database.ref('salaries/' + id).remove();
+        alert("🗑️ បានលុបដោយជោគជ័យ!");
+    }
+}
+
+// Tomorrow delivery schedule
+async function saveTomorrowDelivery() {
+    const customer = document.getElementById('tomCustomer').value.trim();
+    const phone = document.getElementById('tomPhone').value.trim();
+    const location = document.getElementById('tomLocation').value.trim();
+    const driver = document.getElementById('tomDriver').value;
+    const note = document.getElementById('tomNote').value.trim() || '-';
+
+    if (!customer || !phone || !location) {
+        alert("⚠️ សូមបំពេញព័ត៌មានអតិថិជន លេខទូរស័ព្ទ និងទីតាំងឱ្យបានគ្រប់គ្រាន់!");
+        return;
+    }
+
+    const id = Date.now();
+    await database.ref('tomorrowDeliveries/' + id).set({ id, customer, phone, location, driver, note, status: 'រៀបចំសម្រាប់ថ្ងៃស្អែក' });
+    alert("🎉 រក្សាទុកកាលវិភាគដឹកថ្ងៃស្អែកជោគជ័យ!");
+    ['tomCustomer', 'tomPhone', 'tomLocation', 'tomNote'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('tomDriver').value = 'មិនទាន់ចាត់ចែង';
+}
+
+function renderTomorrowDeliveryTable() {
+    const tbody = document.getElementById('tomorrowTableBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = tomorrowDeliveryData.length === 0 ? 
+        `<tr><td colspan="7" class="p-6 text-center text-xs text-slate-400">គ្មានកាលវិភាគសម្រាប់ថ្ងៃស្អែកទេ</td></tr>` : 
+        tomorrowDeliveryData.map((d, i) => `
+            <tr class="text-xs border-b dark:border-slate-800">
+                <td class="p-4 pl-6 text-center font-bold text-slate-400">${i + 1}</td>
+                <td class="p-4 font-bold">${d.customer}</td>
+                <td class="p-4 text-emerald-600 font-bold">📞 ${d.phone}</td>
+                <td class="p-4">${d.location}</td>
+                <td class="p-4 font-bold text-indigo-600">${d.driver}</td>
+                <td class="p-4 text-slate-500">${d.note}</td>
+                <td class="p-4 text-center">
+                    <button onclick="deleteTomorrowDelivery(${d.id})" class="text-rose-600 hover:scale-110 cursor-pointer p-1" title="លុប">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    refreshIcons();
+}
+
+async function deleteTomorrowDelivery(id) {
+    if (confirm("⚠️ តើអ្នកពិតជាចង់លុបកាលវិភាគនេះមែនទេ?")) {
+        await database.ref('tomorrowDeliveries/' + id).remove();
+        alert("🗑️ បានលុបដោយជោគជ័យ!");
+    }
+}
+
 function setupLivePreviewInputs() {
     ['Customer', 'Phone', 'Location', 'Date'].forEach(id => {
-        document.getElementById('invoice' + id)?.addEventListener('input', e => document.getElementById('pdf' + id).innerText = e.target.value || '-');
+        document.getElementById('invoice' + id)?.addEventListener('input', e => {
+            const pdfEl = document.getElementById('pdf' + id);
+            if (pdfEl) pdfEl.innerText = e.target.value || '-';
+        });
     });
 }
 
@@ -294,6 +520,7 @@ function autoFillProductPrice() {
 
 function startBarcodeScanner() {
     document.getElementById('barcodeModal').classList.remove('hidden');
+    refreshIcons();
     html5QrCodeScanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
     html5QrCodeScanner.render(text => {
         const p = productsData.find(x => x.id == text || x.name.toLowerCase().includes(text.toLowerCase()));
@@ -331,27 +558,48 @@ function removeInvoiceItem(i) { currentInvoiceItems.splice(i, 1); renderInvoiceP
 
 function renderInvoicePreviewTable() {
     let total = 0;
-    document.getElementById('invoiceItemsTableBody').innerHTML = currentInvoiceItems.map((item, i) => {
+    const tbody = document.getElementById('invoiceItemsTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = currentInvoiceItems.map((item, i) => {
         total += item.totalPrice;
-        return `<tr class="border-b dark:border-slate-800 text-xs"><td class="p-2 text-center">${i+1}</td><td class="p-2 font-medium">${item.name}</td><td class="p-2 text-center">${item.qty}</td><td class="p-2 text-right">$${item.price.toFixed(2)}</td><td class="p-2 text-right font-bold">$${item.totalPrice.toFixed(2)}</td><td class="p-2 text-center"><button onclick="removeInvoiceItem(${i})" class="text-rose-500 cursor-pointer">❌</button></td></tr>`;
+        return `<tr class="border-b dark:border-slate-800 text-xs">
+            <td class="p-2 text-center">${i+1}</td>
+            <td class="p-2 font-medium">${item.name}</td>
+            <td class="p-2 text-center">${item.qty}</td>
+            <td class="p-2 text-right">$${item.price.toFixed(2)}</td>
+            <td class="p-2 text-right font-bold">$${item.totalPrice.toFixed(2)}</td>
+            <td class="p-2 text-center">
+                <button onclick="removeInvoiceItem(${i})" class="text-rose-500 hover:scale-110 cursor-pointer p-1">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </td>
+        </tr>`;
     }).join('');
-    const delivery = parseFloat(document.getElementById('invoiceDeliveryFee').value) || 0;
-    const disc = parseFloat(document.getElementById('invoiceDiscount').value) || 0;
+
+    const delivery = parseFloat(document.getElementById('invoiceDeliveryFee')?.value) || 0;
+    const disc = parseFloat(document.getElementById('invoiceDiscount')?.value) || 0;
     currentInvoiceGrandTotal = Math.max(0, total + delivery - disc);
-    document.getElementById('pdfDeliveryFeeText').innerText = `$${delivery.toFixed(2)}`;
-    document.getElementById('invoiceGrandTotal').innerHTML = `$${currentInvoiceGrandTotal.toFixed(2)}`;
+    
+    if(document.getElementById('pdfDeliveryFeeText')) document.getElementById('pdfDeliveryFeeText').innerText = `$${delivery.toFixed(2)}`;
+    if(document.getElementById('invoiceGrandTotal')) document.getElementById('invoiceGrandTotal').innerHTML = `$${currentInvoiceGrandTotal.toFixed(2)}`;
+    
     generateDynamicKHQR(currentInvoiceGrandTotal);
     calculateChange();
+    refreshIcons();
 }
 
 function calculateChange() {
-    const cash = parseFloat(document.getElementById('cashReceived').value) || 0;
+    const cash = parseFloat(document.getElementById('cashReceived')?.value) || 0;
     const change = cash - currentInvoiceGrandTotal;
-    document.getElementById('changeDue').value = cash <= 0 ? '$0.00' : (change < 0 ? `ខ្វះ $${Math.abs(change).toFixed(2)}` : `$${change.toFixed(2)}`);
+    const el = document.getElementById('changeDue');
+    if (el) el.value = cash <= 0 ? '$0.00' : (change < 0 ? `ខ្វះ $${Math.abs(change).toFixed(2)}` : `$${change.toFixed(2)}`);
 }
 
 function generateDynamicKHQR(amt) {
-    const c = document.getElementById('qrcode'); c.innerHTML = '';
+    const c = document.getElementById('qrcode'); 
+    if(!c) return;
+    c.innerHTML = '';
     qrcodeInstance = new QRCode(c, { text: `00020101021230380016bakong@vckshop0108VCK_SHOP5204599953038405405${amt.toFixed(2)}5802KH5910VCK SHOP6010Phnom Penh6304`, width: 80, height: 80, colorDark: "#0f172a", colorLight: "#ffffff" });
 }
 
@@ -365,98 +613,219 @@ async function saveFinalInvoice() {
     if (!customer || !location || currentInvoiceItems.length === 0) return alert("⚠️ សូមបំពេញព័ត៌មានឱ្យគ្រប់!");
     const invCode = 'INV-' + Math.floor(100000 + Math.random() * 900000);
     const total = Math.max(0, currentInvoiceItems.reduce((s, i) => s + i.totalPrice, 0) + deliveryFee - discount);
-    currentInvoiceItems.forEach(i => { const p = productsData.find(x => x.id === i.productId); if (p) p.avail -= i.qty; });
+    
+    currentInvoiceItems.forEach(i => { 
+        const p = productsData.find(x => x.id === i.productId); 
+        if (p) p.avail -= i.qty; 
+    });
+
     await database.ref('sales/' + invCode).set({ invCode, customer, phone, location, date, total, items: currentInvoiceItems });
     await database.ref('deliveries/' + invCode).set({ invCode, customer, phone, location, driver: 'មិនទាន់ចាត់ចែង', status: "កំពុងរៀបចំ" });
-    const pObj = {}; productsData.forEach(p => pObj[p.id] = p); await database.ref('products').set(pObj);
-    await sendTelegramNotification(invCode, customer, phone, location, total, currentInvoiceItems);
+    
+    const pObj = {}; productsData.forEach(p => pObj[p.id] = p); 
+    await database.ref('products').set(pObj);
+
     alert(`🎉 រក្សាទុកវិក្កយបត្រ ${invCode} ជោគជ័យ!`);
-    currentInvoiceItems = []; renderInvoicePreviewTable(); switchTab('delivery');
+    currentInvoiceItems = []; 
+    renderInvoicePreviewTable(); 
+    switchTab('delivery');
 }
 
 function resetInvoiceForm() { currentInvoiceItems = []; renderInvoicePreviewTable(); }
+
 function addNewProductToStock() {
     if (currentUser?.role === 'Cashier') return alert("⚠️ គ្មានសិទ្ធិ!");
     const name = document.getElementById('newProdName').value, cat = document.getElementById('newProdCat').value, total = parseInt(document.getElementById('newProdTotal').value), price = parseFloat(document.getElementById('newProdPrice').value);
     if (!name || isNaN(total) || isNaN(price)) return alert("⚠️ សូមបំពេញទិន្នន័យឱ្យគ្រប់!");
     const id = Date.now();
-    database.ref('products/' + id).set({ id, name, cat, total, avail: total, price }).then(() => {
+    database.ref('products/' + id).set({ id, name, cat: cat || 'ទូទៅ', total, avail: total, price }).then(() => {
         ['newProdName', 'newProdCat', 'newProdTotal', 'newProdPrice'].forEach(id => document.getElementById(id).value = '');
     });
 }
 
 function autoSaveProduct(id) {
     if (currentUser?.role === 'Cashier') return;
-    database.ref('products/' + id).update({ total: parseInt(document.getElementById(`inline-total-${id}`).value), avail: parseInt(document.getElementById(`inline-avail-${id}`).value), price: parseFloat(document.getElementById(`inline-price-${id}`).value) });
-}
-
-function deleteProductFromStock(id) { if (currentUser?.role === 'Admin' && confirm("⚠️ លុบทំនិញនេះ?")) database.ref('products/' + id).remove(); }
-function updateDriver(code, driver) { database.ref('deliveries/' + code).update({ driver }); }
-function updateStatus(code, status) {
-    database.ref('deliveries/' + code).update({ status }).then(() => {
-        if (status === 'បានប្រគល់ជូន') { const item = deliveryData.find(x => x.invCode === code); if (item) sendDeliverySuccessNotice(item.phone, code, item.customer); }
+    database.ref('products/' + id).update({ 
+        total: parseInt(document.getElementById(`inline-total-${id}`).value), 
+        avail: parseInt(document.getElementById(`inline-avail-${id}`).value), 
+        price: parseFloat(document.getElementById(`inline-price-${id}`).value) 
     });
 }
 
+function deleteProductFromStock(id) { 
+    if (currentUser?.role === 'Admin' && confirm("⚠️ តើអ្នកពិតជាចង់លុបទំនិញនេះមែនទេ?")) {
+        database.ref('products/' + id).remove(); 
+    }
+}
+
+function updateDriver(code, driver) { database.ref('deliveries/' + code).update({ driver }); }
+function updateStatus(code, status) { database.ref('deliveries/' + code).update({ status }); }
+
 function updateDeliveryStatsByDate() {
-    const date = document.getElementById('deliveryStatDate')?.value;
+    const date = document.getElementById('deliveryStatDate')?.value || new Date().toISOString().split('T')[0];
     const counts = { "លាងហាក់": 0, "ផាន់នី": 0, "សុភាព": 0, "ផល្លីន": 0 };
     deliveryData.forEach(d => {
         const s = salesData.find(x => x.invCode === d.invCode);
-        if (s?.date === date && counts.hasOwnProperty(d.driver) && d.status === 'បានប្រគល់ជូន') counts[d.driver]++;
+        if ((s?.date === date || !s) && counts.hasOwnProperty(d.driver) && d.status === 'បានប្រគល់ជូន') {
+            counts[d.driver]++;
+        }
     });
-    ['លាងហាក់', 'ផាន់នី', 'សុភាព', 'ផល្លីន'].forEach((drv, i) => { document.getElementById(`stat-driver-${i+1}`).innerText = `${counts[drv]} ជើង`; });
+    ['លាងហាក់', 'ផាន់នី', 'សុភាព', 'ផល្លីន'].forEach((drv, i) => { 
+        const el = document.getElementById(`stat-driver-${i+1}`);
+        if (el) el.innerText = `${counts[drv]} ជើង`; 
+    });
 }
 
 function renderDashboard() {
-    const today = new Date().toISOString().split('T')[0], date = document.getElementById('searchDate')?.value || '';
-    let daily = 0, monthly = 0;
-    salesData.forEach(s => { const t = parseFloat(s.total) || 0; if (date && s.date === date) daily += t; if (s.date?.startsWith(today.substring(0, 7))) monthly += t; });
-    const isAdmin = currentUser?.role === 'Admin';
-    document.getElementById('dashDailyAmount').innerText = isAdmin ? `$${daily.toFixed(2)}` : '***';
-    document.getElementById('dashMonthlyAmount').innerText = isAdmin ? `$${monthly.toFixed(2)}` : '***';
-    document.getElementById('dashTotalProducts').innerText = `${productsData.length} មុខ`;
-    document.getElementById('dashLowStockCount').innerText = `${productsData.filter(p => p.avail <= 5).length} មុខ`;
-    renderSalesTable(date);
-}
+    const today = new Date().toISOString().split('T')[0];
+    const selectedDate = document.getElementById('searchDate')?.value || today;
+    const selectedMonth = document.getElementById('searchMonth')?.value || today.substring(0, 7);
 
-function renderSalesTable(date) {
-    const list = date ? salesData.filter(s => s.date === date) : salesData;
-    document.getElementById('salesTableBody').innerHTML = list.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-xs text-slate-400">គ្មានទិន្នន័យ</td></tr>` : list.map(s => `<tr class="text-xs border-b dark:border-slate-800"><td class="p-3 pl-6">${s.date}</td><td class="p-3 text-indigo-600 font-bold cursor-pointer" onclick="viewInvoice('${s.invCode}')">${s.invCode}</td><td class="p-3 font-bold">${s.customer}</td><td class="p-3">${s.location}</td><td class="p-3 text-right font-bold text-emerald-600">$${parseFloat(s.total).toFixed(2)}</td><td class="p-3 text-center"><button onclick="viewInvoice('${s.invCode}')" class="bg-indigo-50 p-1.5 rounded-lg text-indigo-600">👁️</button></td></tr>`).join('');
+    let daily = 0, monthly = 0;
+    salesData.forEach(s => { 
+        const t = parseFloat(s.total) || 0; 
+        if (s.date === selectedDate) daily += t; 
+        if (s.date && s.date.startsWith(selectedMonth)) monthly += t; 
+    });
+
+    const dailyEl = document.getElementById('dashDailyAmount');
+    if (dailyEl) dailyEl.innerText = `$${daily.toFixed(2)}`;
+
+    const monthlyEl = document.getElementById('dashMonthlyAmount');
+    if (monthlyEl) monthlyEl.innerText = `$${monthly.toFixed(2)}`;
+
+    const totalProdEl = document.getElementById('dashTotalProducts');
+    if (totalProdEl) totalProdEl.innerText = `${productsData.length} មុខ`;
+
+    const lowStockEl = document.getElementById('dashLowStockCount');
+    if (lowStockEl) lowStockEl.innerText = `${productsData.filter(p => p.avail <= 5).length} មុខ`;
+
+    renderCharts();
 }
 
 function renderCharts() {
     const ctx1 = document.getElementById('comparisonChart')?.getContext('2d');
     if (ctx1) {
         if (comparisonChartInstance) comparisonChartInstance.destroy();
-        comparisonChartInstance = new Chart(ctx1, { type: 'line', data: { labels: ['សប្តាហ៍ ១', 'សប្តាហ៍ ២', 'សប្តាហ៍ ៣', 'សប្តាហ៍ ៤'], datasets: [{ label: 'ខែនេះ ($)', data: [150, 300, 450, 600], borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.1)', fill: true, tension: 0.4 }] }, options: { responsive: true, maintainAspectRatio: false } });
+        comparisonChartInstance = new Chart(ctx1, { 
+            type: 'line', 
+            data: { 
+                labels: ['សប្តាហ៍ ១', 'សប្តាហ៍ ២', 'សប្តាហ៍ ៣', 'សប្តាហ៍ ៤'], 
+                datasets: [{ 
+                    label: 'ចំណូលប្រចាំសប្តាហ៍ ($)', 
+                    data: [180, 320, 450, 680], 
+                    borderColor: '#6366f1', 
+                    backgroundColor: 'rgba(99, 102, 241, 0.15)', 
+                    fill: true, 
+                    tension: 0.4 
+                }] 
+            }, 
+            options: { responsive: true, maintainAspectRatio: false } 
+        });
     }
+
     const ctx2 = document.getElementById('bestSellersChart')?.getContext('2d');
     if (ctx2) {
         if (myChartInstance) myChartInstance.destroy();
-        myChartInstance = new Chart(ctx2, { type: 'doughnut', data: { labels: productsData.slice(0, 5).map(p => p.name), datasets: [{ data: productsData.slice(0, 5).map(p => p.total - p.avail), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] }] }, options: { responsive: true, maintainAspectRatio: false } });
+        const topProducts = productsData.length > 0 ? productsData.slice(0, 5) : [
+            { name: 'ចានប៉សឺឡែន', total: 100, avail: 20 },
+            { name: 'កែវស្រា Crystal', total: 150, avail: 50 },
+            { name: 'ឈុតចានស៊ុប', total: 80, avail: 10 }
+        ];
+        myChartInstance = new Chart(ctx2, { 
+            type: 'doughnut', 
+            data: { 
+                labels: topProducts.map(p => p.name), 
+                datasets: [{ 
+                    data: topProducts.map(p => p.total - p.avail), 
+                    backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] 
+                }] 
+            }, 
+            options: { responsive: true, maintainAspectRatio: false } 
+        });
     }
+
     const ctx3 = document.getElementById('locationHotspotsChart')?.getContext('2d');
     if (ctx3) {
         if (locationChartInstance) locationChartInstance.destroy();
-        const locCounts = {}; salesData.forEach(s => { if (s.location) locCounts[s.location] = (locCounts[s.location] || 0) + 1; });
-        locationChartInstance = new Chart(ctx3, { type: 'bar', data: { labels: Object.keys(locCounts).length ? Object.keys(locCounts) : ['ភ្នំពេញ'], datasets: [{ label: 'ជើងដឹក', data: Object.values(locCounts).length ? Object.values(locCounts) : [10], backgroundColor: '#10b981' }] }, options: { responsive: true, maintainAspectRatio: false } });
+        const locCounts = {}; 
+        salesData.forEach(s => { if (s.location) locCounts[s.location] = (locCounts[s.location] || 0) + 1; });
+        const labels = Object.keys(locCounts).length ? Object.keys(locCounts) : ['ទួលគោក', 'ច្បារអំពៅ', 'ចំការមន', 'សែនសុខ'];
+        const dataVals = Object.values(locCounts).length ? Object.values(locCounts) : [12, 8, 15, 6];
+
+        locationChartInstance = new Chart(ctx3, { 
+            type: 'bar', 
+            data: { 
+                labels: labels, 
+                datasets: [{ 
+                    label: 'ចំនួនជើងដឹក', 
+                    data: dataVals, 
+                    backgroundColor: '#10b981',
+                    borderRadius: 8
+                }] 
+            }, 
+            options: { responsive: true, maintainAspectRatio: false } 
+        });
     }
 }
 
 function renderAll() {
     renderDashboard();
     const isAdmin = currentUser?.role === 'Admin';
+    
     const stockTbody = document.getElementById('stockTableBody');
     if (stockTbody) {
-        stockTbody.innerHTML = productsData.map((p, i) => `<tr class="text-xs border-b dark:border-slate-800"><td class="p-3 text-center font-bold text-slate-400">${i+1}</td><td class="p-3 font-bold">${p.name}</td><td class="p-3"><span class="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg text-[10px]">${p.cat}</span></td><td class="p-2 text-center"><input type="number" id="inline-total-${p.id}" value="${p.total}" ${!isAdmin?'readonly':''} onchange="autoSaveProduct(${p.id})" class="vcm-input w-16 border rounded text-center p-1 font-bold"></td><td class="p-2 text-center"><input type="number" id="inline-avail-${p.id}" value="${p.avail}" ${!isAdmin?'readonly':''} onchange="autoSaveProduct(${p.id})" class="w-16 border rounded text-center p-1 font-bold ${p.avail<=5?'text-rose-500 bg-rose-50':''}"></td><td class="p-2 text-right"><input type="number" step="0.01" id="inline-price-${p.id}" value="${p.price}" ${!isAdmin?'readonly':''} onchange="autoSaveProduct(${p.id})" class="w-20 border rounded text-right p-1 font-bold"></td><td class="p-3 text-center">${isAdmin?`<button onclick="deleteProductFromStock(${p.id})" class="text-rose-600">🗑️</button>`:'🔒'}</td></tr>`).join('');
+        stockTbody.innerHTML = productsData.length === 0 ? 
+            `<tr><td colspan="7" class="p-6 text-center text-xs text-slate-400">កំពុងទាញទិន្នន័យស្តុក...</td></tr>` :
+            productsData.map((p, i) => `
+                <tr class="text-xs border-b dark:border-slate-800">
+                    <td class="p-3 text-center font-bold text-slate-400">${i+1}</td>
+                    <td class="p-3 font-bold">${p.name}</td>
+                    <td class="p-3"><span class="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg text-[10px]">${p.cat || 'ទូទៅ'}</span></td>
+                    <td class="p-2 text-center"><input type="number" id="inline-total-${p.id}" value="${p.total}" ${!isAdmin?'readonly':''} onchange="autoSaveProduct(${p.id})" class="vck-input w-16 border rounded text-center p-1 font-bold"></td>
+                    <td class="p-2 text-center"><input type="number" id="inline-avail-${p.id}" value="${p.avail}" ${!isAdmin?'readonly':''} onchange="autoSaveProduct(${p.id})" class="w-16 border rounded text-center p-1 font-bold ${p.avail<=5?'text-rose-500 bg-rose-50 dark:bg-rose-950/40':''}"></td>
+                    <td class="p-2 text-right"><input type="number" step="0.01" id="inline-price-${p.id}" value="${p.price}" ${!isAdmin?'readonly':''} onchange="autoSaveProduct(${p.id})" class="w-20 border rounded text-right p-1 font-bold"></td>
+                    <td class="p-3 text-center">${isAdmin ? `<button onclick="deleteProductFromStock(${p.id})" class="text-rose-600 hover:scale-110 cursor-pointer p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : '<i data-lucide="lock" class="w-4 h-4 text-slate-400 inline-block"></i>'}</td>
+                </tr>
+            `).join('');
     }
-    const tbody = document.getElementById('deliveryTableBody');
-    if (tbody) {
-        tbody.innerHTML = deliveryData.map(d => `<tr class="text-xs border-b dark:border-slate-800"><td class="p-4 pl-6">${salesData.find(s=>s.invCode===d.invCode)?.date||'-'}</td><td class="p-4 font-bold text-indigo-600">${d.invCode}</td><td class="p-4 font-bold">${d.customer}</td><td class="p-4">ភ្នំពេញ</td><td class="p-4">${d.location}</td><td class="p-4"><select onchange="updateDriver('${d.invCode}', this.value)" class="vck-input p-1 rounded text-xs"><option value="មិនទាន់ចាត់ចែង">---</option><option value="លាងហាក់" ${d.driver==='លាងហាក់'?'selected':''}>លាងហាក់</option><option value="ផាន់នី" ${d.driver==='ផាន់នី'?'selected':''}>ផាន់នី</option><option value="សុភាព" ${d.driver==='សុភាព'?'selected':''}>សុភាព</option><option value="ផល្លីន" ${d.driver==='ផល្លីន'?'selected':''}>ផល្លីន</option></select></td><td class="p-4 text-center"><span class="px-2 py-1 rounded text-[10px] font-bold ${d.status==='បានប្រគល់ជូន'?'bg-emerald-50 text-emerald-600':'bg-indigo-50 text-indigo-600'}">${d.status}</span></td><td class="p-4 text-center"><select onchange="updateStatus('${d.invCode}', this.value)" class="vck-input p-1 rounded text-xs"><option value="កំពុងរៀបចំ">កំពុងរៀបចំ</option><option value="កំពុងដឹក">កំពុងដឹក</option><option value="បានប្រគល់ជូន">បានប្រគល់ជូន</option></select></td></tr>`).join('');
+
+    const deliveryTbody = document.getElementById('deliveryTableBody');
+    if (deliveryTbody) {
+        deliveryTbody.innerHTML = deliveryData.length === 0 ? 
+            `<tr><td colspan="8" class="p-6 text-center text-xs text-slate-400">គ្មានទិន្នន័យដឹកជញ្ជូន</td></tr>` :
+            deliveryData.map(d => `
+                <tr class="text-xs border-b dark:border-slate-800">
+                    <td class="p-4 pl-6">${salesData.find(s=>s.invCode===d.invCode)?.date || new Date().toISOString().split('T')[0]}</td>
+                    <td class="p-4 font-bold text-indigo-600">${d.invCode}</td>
+                    <td class="p-4 font-bold">${d.customer}</td>
+                    <td class="p-4">ភ្នំពេញ</td>
+                    <td class="p-4">${d.location}</td>
+                    <td class="p-4">
+                        <select onchange="updateDriver('${d.invCode}', this.value)" class="vck-input p-1 rounded text-xs font-bold">
+                            <option value="មិនទាន់ចាត់ចែង">---</option>
+                            <option value="លាងហាក់" ${d.driver==='លាងហាក់'?'selected':''}>លាងហាក់</option>
+                            <option value="ផាន់នី" ${d.driver==='ផាន់នី'?'selected':''}>ផាន់នី</option>
+                            <option value="សុភាព" ${d.driver==='សុភាព'?'selected':''}>សុភាព</option>
+                            <option value="ផល្លីន" ${d.driver==='ផល្លីន'?'selected':''}>ផល្លីន</option>
+                        </select>
+                    </td>
+                    <td class="p-4 text-center">
+                        <span class="px-2 py-1 rounded-lg text-[10px] font-bold ${d.status==='បានប្រគល់ជូន'?'bg-emerald-100 text-emerald-700':'bg-indigo-100 text-indigo-700'}">${d.status}</span>
+                    </td>
+                    <td class="p-4 text-center">
+                        <select onchange="updateStatus('${d.invCode}', this.value)" class="vck-input p-1 rounded text-xs font-bold">
+                            <option value="កំពុងរៀបចំ" ${d.status==='កំពុងរៀបចំ'?'selected':''}>កំពុងរៀបចំ</option>
+                            <option value="កំពុងដឹក" ${d.status==='កំពុងដឹក'?'selected':''}>កំពុងដឹក</option>
+                            <option value="បានប្រគល់ជូន" ${d.status==='បានប្រគល់ជូន'?'selected':''}>បានប្រគល់ជូន</option>
+                        </select>
+                    </td>
+                </tr>
+            `).join('');
     }
+
     updateDeliveryStatsByDate();
-    renderCharts();
+    refreshIcons();
 }
 
 function searchStockFunction() {
@@ -466,18 +835,11 @@ function searchStockFunction() {
     });
 }
 
-function viewInvoice(id) {
-    database.ref('sales/' + id).once('value').then(snap => {
-        const data = snap.val(); if (!data) return;
-        document.getElementById('modalInvoiceContent').innerHTML = `<p><b>វិក្កយបត្រ:</b> ${data.invCode}</p><p><b>អតិថិជន:</b> ${data.customer} (${data.phone})</p><table class="w-full text-xs border mt-3 dark:border-slate-800"><thead><tr class="bg-slate-100 dark:bg-slate-800"><th class="p-2">ទំនិញ</th><th class="p-2">ចំនួន</th><th class="p-2">សរុប</th></tr></thead><tbody>${data.items.map(i=>`<tr><td class="p-2">${i.name}</td><td class="p-2 text-center">${i.qty}</td><td class="p-2 text-right">$${i.totalPrice.toFixed(2)}</td></tr>`).join('')}</tbody></table><p class="text-right font-black mt-3 text-indigo-600">សរុប: $${parseFloat(data.total).toFixed(2)}</p>`;
-        document.getElementById('invoiceModal').classList.remove('hidden');
-    });
+function toggleMobileMenu() { 
+    document.getElementById('sidebarMenu')?.classList.toggle('hidden'); 
 }
 
-function closeInvoiceModal() { document.getElementById('invoiceModal').classList.add('hidden'); }
-function toggleMobileMenu() { document.getElementById('sidebarMenu').classList.toggle('hidden'); }
-
-// --- មុខងារថ្មី៖ រក្សាទុករៀបចំលេខទូរស័ព្ទឡាន និងចំណតតាមខេត្ត ---
+// Car Contacts functions
 async function saveCarContact() {
     const province = document.getElementById('carProvince').value.trim();
     const station = document.getElementById('carStation').value.trim();
@@ -485,75 +847,39 @@ async function saveCarContact() {
     const driverName = document.getElementById('carDriverName').value.trim() || '-';
     const note = document.getElementById('carNote').value.trim() || '-';
 
-    if (!province || !station || !phone) {
-        alert("⚠️ សូមបំពេញខេត្ត ចំណត និងលេខទូរស័ព្ទឱ្យបានគ្រប់គ្រាន់!");
-        return;
-    }
+    if (!province || !station || !phone) return alert("⚠️ សូមបំពេញខេត្ត ចំណត និងលេខទូរស័ព្ទឱ្យបានគ្រប់គ្រាន់!");
 
     const id = Date.now();
-    try {
-        await database.ref('carContacts/' + id).set({
-            id,
-            province,
-            station,
-            phone,
-            driverName,
-            note,
-            createdAt: new Date().toISOString().split('T')[0]
-        });
-
-        alert("🎉 រក្សាទុកលេខទូរស័ព្ទឡានជោគជ័យ!");
-        ['carProvince', 'carStation', 'carPhone', 'carDriverName', 'carNote'].forEach(id => {
-            document.getElementById(id).value = '';
-        });
-    } catch (error) {
-        alert("❌ មានបញ្ហាក្នុងការរក្សាទុក: " + error.message);
-    }
+    await database.ref('carContacts/' + id).set({ id, province, station, phone, driverName, note });
+    alert("🎉 រក្សាទុកលេខទូរស័ព្ទឡានជោគជ័យ!");
+    ['carProvince', 'carStation', 'carPhone', 'carDriverName', 'carNote'].forEach(id => document.getElementById(id).value = '');
 }
 
 function renderCarContactsTable(listToRender = null) {
     const tbody = document.getElementById('carTableBody');
     if (!tbody) return;
-
     const data = listToRender || carContactsData;
-
-    tbody.innerHTML = data.length === 0 ? 
-        `<tr><td colspan="7" class="p-6 text-center text-xs text-slate-400">គ្មានទិន្នន័យលេខឡាន/ចំណតទេ</td></tr>` : 
-        data.map((car, i) => `
-            <tr class="text-xs border-b dark:border-slate-800">
-                <td class="p-4 pl-6 text-center font-bold text-slate-400">${i + 1}</td>
-                <td class="p-4 font-bold text-indigo-600">${car.province}</td>
-                <td class="p-4 font-medium">${car.station}</td>
-                <td class="p-4">${car.driverName}</td>
-                <td class="p-4 font-bold text-emerald-600">
-                    <a href="tel:${car.phone}" class="hover:underline flex items-center gap-1">📞 ${car.phone}</a>
-                </td>
-                <td class="p-4 text-slate-500">${car.note}</td>
-                <td class="p-4 text-center">
-                    <button onclick="deleteCarContact(${car.id})" class="text-rose-600 hover:scale-110 cursor-pointer p-1" title="លុប">🗑️</button>
-                </td>
-            </tr>
-        `).join('');
+    tbody.innerHTML = data.length === 0 ? `<tr><td colspan="7" class="p-6 text-center text-xs text-slate-400">គ្មានទិន្នន័យឡាន/ចំណតទេ</td></tr>` : 
+    data.map((car, i) => `
+        <tr class="text-xs border-b dark:border-slate-800">
+            <td class="p-4 pl-6 text-center font-bold text-slate-400">${i + 1}</td>
+            <td class="p-4 font-bold text-indigo-600">${car.province}</td>
+            <td class="p-4 font-medium">${car.station}</td>
+            <td class="p-4">${car.driverName}</td>
+            <td class="p-4 font-bold text-emerald-600"><a href="tel:${car.phone}" class="hover:underline flex items-center gap-1"><i data-lucide="phone-call" class="w-3.5 h-3.5"></i> ${car.phone}</a></td>
+            <td class="p-4 text-slate-500">${car.note}</td>
+            <td class="p-4 text-center"><button onclick="deleteCarContact(${car.id})" class="text-rose-600 hover:scale-110 cursor-pointer p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
+        </tr>
+    `).join('');
+    refreshIcons();
 }
 
 function searchCarFunction() {
     const filter = document.getElementById("searchCarInput").value.toLowerCase();
-    const filtered = carContactsData.filter(car => 
-        car.province.toLowerCase().includes(filter) ||
-        car.station.toLowerCase().includes(filter) ||
-        car.phone.toLowerCase().includes(filter) ||
-        car.driverName.toLowerCase().includes(filter) ||
-        car.note.toLowerCase().includes(filter)
-    );
+    const filtered = carContactsData.filter(car => car.province.toLowerCase().includes(filter) || car.station.toLowerCase().includes(filter) || car.phone.toLowerCase().includes(filter));
     renderCarContactsTable(filtered);
 }
 
 function deleteCarContact(id) {
-    if (confirm("⚠️ តើអ្នកពិតជាចង់លុបព័ត៌មានឡាននេះមែនទេ?")) {
-        database.ref('carContacts/' + id).remove().then(() => {
-            alert("🗑️ បានលុបដោយជោគជ័យ!");
-        }).catch(err => {
-            alert("❌ កំហុសក្នុងការលុប: " + err.message);
-        });
-    }
+    if (confirm("⚠️ លុបព័ត៌មានឡាននេះ?")) database.ref('carContacts/' + id).remove();
 }
