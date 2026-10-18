@@ -271,7 +271,7 @@ function initSystemAfterLogin() {
 }
 
 function switchTab(tabId) {
-    if (tabId === 'salary' && currentUser?.role !== 'Admin') {
+    if ((tabId === 'salary' || tabId === 'reports') && currentUser?.role !== 'Admin') {
         return alert("⚠️ គ្មានសិទ្ធិទស្សនាទំព័រនេះទេ (សម្រាប់ Admin តែប៉ុណ្ណោះ)!");
     }
 
@@ -294,7 +294,8 @@ function switchTab(tabId) {
         'attendance': { title: 'ស្កែនវត្តមាន', icon: 'clock' }, 
         'salary': { title: 'តារាងប្រាក់ខែបុគ្គលិក', icon: 'wallet' },
         'customer-history': { title: 'ប្រវត្តិអតិថិជន', icon: 'users' },
-        'car-contacts': { title: 'លេខទូរស័ព្ទឡាន និងចំណត', icon: 'bus' }
+        'car-contacts': { title: 'លេខទូរស័ព្ទឡាន និងចំណត', icon: 'bus' },
+        'reports': { title: 'របាយការណ៍ និងការវិភាគ', icon: 'sparkles' }
     };
     
     const pageConfig = titles[tabId] || { title: 'VCK System', icon: 'activity' };
@@ -308,6 +309,7 @@ function switchTab(tabId) {
     }
     
     renderAll();
+    if (tabId === 'reports') renderReportsData();
     refreshIcons();
 }
 
@@ -757,6 +759,35 @@ function renderCharts() {
             data: { labels: labels, datasets: [{ label: 'ចំនួនជើងដឹក', data: dataVals, backgroundColor: '#10b981', borderRadius: 8 }] }, 
             options: { responsive: true, maintainAspectRatio: false } 
         });
+    }
+}
+
+function renderReportsData() {
+    if (currentUser?.role !== 'Admin') return;
+    const currentMonth = new Date().toISOString().substring(0, 7);
+    let totalRev = 0, totalInvCount = 0;
+
+    salesData.forEach(s => {
+        if (s.date && s.date.startsWith(currentMonth)) {
+            totalRev += parseFloat(s.total) || 0;
+            totalInvCount++;
+        }
+    });
+
+    const estProfit = totalRev * 0.7;
+
+    if(document.getElementById('reportTotalRevenue')) document.getElementById('reportTotalRevenue').innerText = `$${totalRev.toFixed(2)}`;
+    if(document.getElementById('reportEstimatedProfit')) document.getElementById('reportEstimatedProfit').innerText = `$${estProfit.toFixed(2)}`;
+    if(document.getElementById('reportTotalInvoices')) document.getElementById('reportTotalInvoices').innerText = `${totalInvCount} វិក្កយបត្រ`;
+
+    const insightsEl = document.getElementById('aiInsightsText');
+    if (insightsEl) {
+        let lowStockItems = productsData.filter(p => p.avail <= 5).length;
+        insightsEl.innerHTML = `
+            <p>✅ <b>ស្ថានភាពហាងខែនេះ:</b> ចំណូលសរុបសម្រេចបាន <b>$${totalRev.toFixed(2)}</b> ពីការលក់សរុបចំនួន ${totalInvCount} វិក្កយបត្រ។</p>
+            <p>📦 <b>ការគ្រប់គ្រងស្តុក:</b> មានមុខទំនិញចំនួន <b class="text-rose-500">${lowStockItems} មុខ</b> ដែលកំពុងមានស្តុកទាបជាង ឬស្មើ 5 ដែលតម្រូវឱ្យអ្នកធ្វើការកុម្ម៉ង់ទិញបន្ថែមពីអ្នកផ្គត់ផ្គង់ (Supplier) ជាបន្ទាន់។</p>
+            <p>🚀 <b>យុទ្ធសាស្ត្រណែនាំ:</b> ផ្អែកលើទិន្នន័យដឹកជញ្ជូន តំបន់ដែលមានអតិថិជនកុម្ម៉ង់ទិញច្រើនជាងគេគឺរាជធានីភ្នំពេញ និងតំបន់ជុំវិញ ដែលអ្នកគួររក្សាទុករបស់របរប្រភេទចានប្រណិតឱ្យបានគ្រប់គ្រាន់សម្រាប់តម្រូវការពិធីផ្សេងៗនាពេលខាងមុខ។</p>
+        `;
     }
 }
 
