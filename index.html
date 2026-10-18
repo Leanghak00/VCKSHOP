@@ -9,26 +9,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@300;400;700;900&family=Kantumruy+Pro:wght@300;400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CSS v4 -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- QRCode.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <!-- HTML5 QR Code Scanner Library -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
-    <!-- Firebase Libraries -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     
-    <!-- HTML2PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-    <!-- External CSS -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body class="min-h-screen">
@@ -124,15 +116,23 @@
                 </button>
             </nav>
 
-            <!-- User Footer -->
+            <!-- User Footer (Supports Switch Account & Logout) -->
             <div id="userFooter" class="flex p-4 border-t border-slate-800 bg-slate-950/80 items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div id="userAvatar" class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-md">U</div>
-                    <div><h4 id="topNavUser" class="text-xs font-bold text-white">-</h4><p id="topNavRole" class="text-[10px] text-slate-400">-</p></div>
+                    <div>
+                        <h4 id="topNavUser" class="text-xs font-bold text-white">-</h4>
+                        <p id="topNavRole" class="text-[10px] text-slate-400">-</p>
+                    </div>
                 </div>
-                <button onclick="handleLogout()" class="text-slate-400 hover:text-rose-400 p-2.5 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors group" title="ចាកចេញ">
-                    <i data-lucide="log-out" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i>
-                </button>
+                <div class="flex items-center gap-1">
+                    <button onclick="handleSwitchAccount()" class="text-slate-400 hover:text-amber-400 p-2.5 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors group" title="ប្ដូរគណនី (Switch Account)">
+                        <i data-lucide="repeat" class="w-4 h-4 group-hover:rotate-180 transition-transform duration-300"></i>
+                    </button>
+                    <button onclick="handleLogout()" class="text-slate-400 hover:text-rose-400 p-2.5 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors group" title="ចាកចេញ (Logout)">
+                        <i data-lucide="log-out" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i>
+                    </button>
+                </div>
             </div>
         </aside>
 
@@ -196,7 +196,6 @@
                         </div>
                     </div>
 
-                    <!-- ក្រាហ្វិក -->
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="vck-card lg:col-span-2 p-6 space-y-4">
                             <h3 class="font-black text-xs uppercase tracking-wider text-slate-500 flex items-center gap-2">
