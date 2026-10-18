@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>VCK SHOP Pro v3.0 - Modern UI</title>
+    <title>VCK SHOP Pro v3.0</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -113,6 +113,10 @@
                 <button id="btn-car-contacts" onclick="switchTab('car-contacts')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer text-teal-300 transition-all group">
                     <i data-lucide="bus" class="w-4 h-4 text-teal-300 group-hover:translate-x-0.5 transition-transform"></i>
                     <span>លេខទូរស័ព្ទឡាន/ចំណត</span>
+                </button>
+                <button id="btn-reports" onclick="switchTab('reports')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer text-purple-300 transition-all group hidden" data-admin-only="true">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-purple-300 group-hover:scale-110 transition-transform"></i>
+                    <span>របាយការណ៍ និងការវិភាគ (Reports)</span>
                 </button>
             </nav>
 
@@ -540,6 +544,47 @@
                             </div>
                         </div>
                         <div class="overflow-x-auto"><table class="w-full text-left"><thead><tr class="bg-slate-50 dark:bg-slate-800/80 text-[11px] font-bold text-slate-400 border-b dark:border-slate-800"><th class="p-4 pl-6 text-center">ល.រ</th><th class="p-4">ខេត្តគោលដៅ</th><th class="p-4">ចំណតនៅភ្នំពេញ</th><th class="p-4">ឈ្មោះឡាន / អ្នកបើកបរ</th><th class="p-4">លេខទូរស័ព្ទ</th><th class="p-4">ចំណាំ</th><th class="p-4 text-center">សកម្មភាព</th></tr></thead><tbody id="carTableBody"><tr><td colspan="7" class="p-6 text-center text-xs text-slate-400">កំពុងទាញទិន្នន័យ...</td></tr></tbody></table></div>
+                    </div>
+                </section>
+
+                <!-- REPORTS TAB (Admin Only) -->
+                <section id="tab-reports" class="tab-content hidden space-y-6">
+                    <div class="vck-card p-6 space-y-4">
+                        <div class="flex justify-between items-center border-b dark:border-slate-800 pb-4">
+                            <div>
+                                <h3 class="font-black text-base flex items-center gap-2 text-purple-600 dark:text-purple-400">
+                                    <i data-lucide="sparkles" class="w-5 h-5"></i> របាយការណ៍ហិរញ្ញវត្ថុ និងការវិភាគអាជីវកម្មស្វ័យប្រវត្តិ
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-1">ទិដ្ឋភាពទូទៅនៃចំណូល ប្រាក់ចំណេញ និងការព្យាករណ៍ទំនិញលក់ដាច់ខ្លាំងប្រចាំខែ</p>
+                            </div>
+                            <button onclick="renderReportsData()" class="vck-btn-primary text-white px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer shadow-md flex items-center gap-1.5">
+                                <i data-lucide="refresh-cw" class="w-4 h-4"></i> ធ្វើបច្ចុប្បន្នភាពទិន្នន័យ
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div class="bg-purple-50/50 dark:bg-purple-950/20 p-5 rounded-2xl border border-purple-100 dark:border-purple-900/50">
+                                <p class="text-[10px] font-extrabold text-purple-500 uppercase">ចំណូលសរុបខែនេះ</p>
+                                <h4 id="reportTotalRevenue" class="text-2xl font-black text-purple-600 mt-1">$0.00</h4>
+                            </div>
+                            <div class="bg-emerald-50/50 dark:bg-emerald-950/20 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-900/50">
+                                <p class="text-[10px] font-extrabold text-emerald-500 uppercase">ប្រាក់ចំណេញប៉ាន់ស្មាន (សល់ 70%)</p>
+                                <h4 id="reportEstimatedProfit" class="text-2xl font-black text-emerald-600 mt-1">$0.00</h4>
+                            </div>
+                            <div class="bg-sky-50/50 dark:bg-sky-950/20 p-5 rounded-2xl border border-sky-100 dark:border-sky-900/50">
+                                <p class="text-[10px] font-extrabold text-sky-500 uppercase">វិក្កយបត្រសរុបខែនេះ</p>
+                                <h4 id="reportTotalInvoices" class="text-2xl font-black text-sky-600 mt-1">0 វិក្កយបត្រ</h4>
+                            </div>
+                        </div>
+
+                        <div class="p-5 border dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/40 space-y-3">
+                            <h4 class="font-black text-xs uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                                <i data-lucide="trending-up" class="w-4 h-4 text-purple-500"></i> ការព្យាករណ៍ និងយោបល់យុទ្ធសាស្ត្រអាជីវកម្ម (Business Insights)
+                            </h4>
+                            <div id="aiInsightsText" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed space-y-2">
+                                <p>📌 កំពុងវិភាគទិន្នន័យហាង...</p>
+                            </div>
+                        </div>
                     </div>
                 </section>
             </div>
