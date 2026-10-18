@@ -11,6 +11,8 @@
     
     <!-- Tailwind CSS v4 -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- QRCode.js -->
@@ -35,7 +37,9 @@
     <div id="login-screen" class="flex items-center justify-center min-h-screen p-4 bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900">
         <div class="vck-card p-8 sm:p-10 w-full max-w-md border-white/10 dark:border-slate-800 animate-fade-in backdrop-blur-2xl">
             <div class="text-center mb-8">
-                <div class="inline-flex items-center justify-center w-20 h-20 bg-indigo-50 dark:bg-indigo-900/40 rounded-3xl text-4xl shadow-inner mb-3 text-indigo-600 dark:text-indigo-400">🛍️</div>
+                <div class="inline-flex items-center justify-center w-20 h-20 bg-indigo-50 dark:bg-indigo-900/40 rounded-3xl shadow-inner mb-3 text-indigo-600 dark:text-indigo-400 group hover:scale-105 transition-transform duration-300">
+                    <i data-lucide="shopping-bag" class="w-10 h-10 transition-transform duration-300 group-hover:rotate-12"></i>
+                </div>
                 <h1 class="text-3xl font-black text-slate-900 dark:text-white tracking-tight">VCK SHOP</h1>
                 <p class="text-xs text-slate-500 dark:text-slate-400 font-medium mt-1">ប្រព័ន្ធគ្រប់គ្រងការលក់ និងស្តុកទំនិញទំនើប</p>
             </div>
@@ -43,14 +47,21 @@
             <div class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 ml-1">ឈ្មោះអ្នកប្រើប្រាស់ (Username / Email)</label>
-                    <input type="text" id="loginUsername" placeholder="ឧ. vicheka ឬ leanghak" class="vck-input w-full p-3.5 rounded-2xl text-sm font-bold focus:outline-none">
+                    <div class="relative">
+                        <i data-lucide="user" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                        <input type="text" id="loginUsername" placeholder="ឧ. vicheka ឬ leanghak" class="vck-input w-full pl-10 pr-3.5 py-3 rounded-2xl text-sm font-bold focus:outline-none">
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1.5 ml-1">លេខសម្ងាត់ (Password)</label>
-                    <input type="password" id="loginPassword" placeholder="••••••••" class="vck-input w-full p-3.5 rounded-2xl text-sm focus:outline-none">
+                    <div class="relative">
+                        <i data-lucide="lock" class="w-4 h-4 absolute left-3.5 top-3.5 text-slate-400"></i>
+                        <input type="password" id="loginPassword" placeholder="••••••••" class="vck-input w-full pl-10 pr-3.5 py-3 rounded-2xl text-sm focus:outline-none">
+                    </div>
                 </div>
-                <button onclick="handleLogin()" class="vck-btn-primary w-full text-white p-3.5 rounded-2xl font-bold shadow-lg mt-2 cursor-pointer text-sm">
-                    ចូលប្រើប្រាស់ប្រព័ន្ធ (Secure Login)
+                <button onclick="handleLogin()" class="vck-btn-primary w-full text-white p-3.5 rounded-2xl font-bold shadow-lg mt-2 cursor-pointer text-sm flex items-center justify-center gap-2 group">
+                    <span>ចូលប្រើប្រាស់ប្រព័ន្ធ (Secure Login)</span>
+                    <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
                 </button>
             </div>
         </div>
@@ -69,17 +80,48 @@
                         <p class="text-[10px] text-emerald-400 font-bold flex items-center gap-1.5 mt-0.5"><span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span> សុវត្ថិភាព Cloud</p>
                     </div>
                 </div>
-                <button type="button" onclick="toggleMobileMenu()" class="md:hidden text-white bg-indigo-600 px-3.5 py-2 rounded-xl text-xs font-bold">☰ ម៉ឺនុយ</button>
+                <button type="button" onclick="toggleMobileMenu()" class="md:hidden text-white bg-indigo-600 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                    <i data-lucide="menu" class="w-4 h-4"></i> ម៉ឺនុយ
+                </button>
             </div>
 
             <nav id="sidebarMenu" class="hidden md:block flex-1 p-4 space-y-1.5 custom-scrollbar overflow-y-auto">
-                <button id="btn-dashboard" onclick="switchTab('dashboard')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer transition-all"><span>📊</span> ផ្ទាំងគ្រប់គ្រងទូទៅ</button>
-                <button id="btn-sales" onclick="switchTab('sales')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer transition-all"><span>📄</span> បង្កើតវិក្កយបត្រ</button>
-                <button id="btn-delivery" onclick="switchTab('delivery')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer transition-all"><span>🚚</span> ប្រព័ន្ធដឹកជញ្ជូន</button>
-                <button id="btn-stock" onclick="switchTab('stock')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer transition-all"><span>📦</span> គ្រប់គ្រងឃ្លាំងស្តុក</button>
-                <button id="btn-attendance" onclick="switchTab('attendance')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer text-amber-300 transition-all"><span>⏰</span> ស្កេនវត្តមានធ្វើការ</button>
-                <button id="btn-customer-history" onclick="switchTab('customer-history')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer text-indigo-300 transition-all"><span>👥</span> ប្រវត្តិទិញអតិថិជន</button>
-                <button id="btn-car-contacts" onclick="switchTab('car-contacts')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer text-teal-300 transition-all"><span>🚐</span> លេខទូរស័ព្ទឡាន/ចំណត</button>
+                <button id="btn-dashboard" onclick="switchTab('dashboard')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer transition-all group">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform"></i>
+                    <span>ផ្ទាំងគ្រប់គ្រងទូទៅ</span>
+                </button>
+                <button id="btn-sales" onclick="switchTab('sales')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer transition-all group">
+                    <i data-lucide="receipt" class="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform"></i>
+                    <span>បង្កើតវិក្កយបត្រ</span>
+                </button>
+                <button id="btn-delivery" onclick="switchTab('delivery')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer transition-all group">
+                    <i data-lucide="truck" class="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform"></i>
+                    <span>ប្រព័ន្ធដឹកជញ្ជូន</span>
+                </button>
+                <button id="btn-tomorrow-delivery" onclick="switchTab('tomorrow-delivery')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer text-amber-300 transition-all group">
+                    <i data-lucide="calendar-plus" class="w-4 h-4 text-amber-300 group-hover:scale-110 transition-transform"></i>
+                    <span>កាលវិភាគដឹកថ្ងៃស្អែក</span>
+                </button>
+                <button id="btn-stock" onclick="switchTab('stock')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer transition-all group">
+                    <i data-lucide="package" class="w-4 h-4 text-sky-400 group-hover:scale-110 transition-transform"></i>
+                    <span>គ្រប់គ្រងឃ្លាំងស្តុក</span>
+                </button>
+                <button id="btn-attendance" onclick="switchTab('attendance')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer text-emerald-300 transition-all group">
+                    <i data-lucide="clock" class="w-4 h-4 text-emerald-300 group-hover:rotate-12 transition-transform"></i>
+                    <span>ស្កេនវត្តមានធ្វើការ</span>
+                </button>
+                <button id="btn-salary" onclick="switchTab('salary')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer text-rose-300 transition-all group hidden" data-admin-only="true">
+                    <i data-lucide="wallet" class="w-4 h-4 text-rose-300 group-hover:scale-110 transition-transform"></i>
+                    <span>តារាងប្រាក់ខែបុគ្គលិក</span>
+                </button>
+                <button id="btn-customer-history" onclick="switchTab('customer-history')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer text-indigo-300 transition-all group">
+                    <i data-lucide="users" class="w-4 h-4 text-indigo-300 group-hover:scale-110 transition-transform"></i>
+                    <span>ប្រវត្តិទិញអតិថិជន</span>
+                </button>
+                <button id="btn-car-contacts" onclick="switchTab('car-contacts')" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold hover:bg-slate-800 hover:text-white text-left cursor-pointer text-teal-300 transition-all group">
+                    <i data-lucide="bus" class="w-4 h-4 text-teal-300 group-hover:translate-x-0.5 transition-transform"></i>
+                    <span>លេខទូរស័ព្ទឡាន/ចំណត</span>
+                </button>
             </nav>
 
             <!-- User Footer -->
@@ -88,17 +130,27 @@
                     <div id="userAvatar" class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-black text-sm shadow-md">U</div>
                     <div><h4 id="topNavUser" class="text-xs font-bold text-white">-</h4><p id="topNavRole" class="text-[10px] text-slate-400">-</p></div>
                 </div>
-                <button onclick="handleLogout()" class="text-slate-400 hover:text-rose-400 p-2.5 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors" title="ចាកចេញ">🚪</button>
+                <button onclick="handleLogout()" class="text-slate-400 hover:text-rose-400 p-2.5 rounded-xl hover:bg-slate-800 cursor-pointer transition-colors group" title="ចាកចេញ">
+                    <i data-lucide="log-out" class="w-4 h-4 group-hover:translate-x-0.5 transition-transform"></i>
+                </button>
             </div>
         </aside>
 
         <!-- Content Area -->
         <main class="flex-1 flex flex-col overflow-x-hidden min-w-0 bg-slate-50/50 dark:bg-slate-950 pb-16 md:pb-0">
             <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-4 sm:px-8 sm:py-5 flex justify-between items-center sticky top-0 z-40 shadow-xs">
-                <h2 id="pageTitle" class="font-black text-base sm:text-lg text-slate-800 dark:text-white">📊 ផ្ទាំងគ្រប់គ្រងទូទៅ</h2>
+                <h2 id="pageTitle" class="font-black text-base sm:text-lg text-slate-800 dark:text-white flex items-center gap-2">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 text-indigo-600"></i>
+                    <span>ផ្ទាំងគ្រប់គ្រងទូទៅ</span>
+                </h2>
                 <div class="flex items-center gap-3">
-                    <button onclick="toggleDarkMode()" class="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold hover:scale-105 transition-transform"><span id="darkModeIcon">🌙</span></button>
-                    <div class="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-3.5 py-2 rounded-2xl hidden sm:block border dark:border-slate-700" id="liveClockDisplay"></div>
+                    <button onclick="toggleDarkMode()" class="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold hover:scale-105 transition-transform cursor-pointer">
+                        <span id="darkModeIcon"><i data-lucide="moon" class="w-4 h-4"></i></span>
+                    </button>
+                    <div class="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-3.5 py-2 rounded-2xl hidden sm:flex items-center gap-2 border dark:border-slate-700" id="liveClockDisplay">
+                        <i data-lucide="clock" class="w-3.5 h-3.5 text-indigo-500"></i>
+                        <span>--:--:--</span>
+                    </div>
                 </div>
             </header>
 
@@ -106,36 +158,169 @@
                 <!-- DASHBOARD TAB -->
                 <section id="tab-dashboard" class="tab-content hidden space-y-6">
                     <div id="dash-cards-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="vck-card p-5 flex flex-col justify-between space-y-3">
-                            <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">លក់ប្រចាំថ្ងៃ</p><h3 id="dashDailyAmount" class="text-2xl font-black text-emerald-600 mt-1">$0.00</h3></div>
+                        <div class="vck-card p-5 flex flex-col justify-between space-y-3 relative overflow-hidden group">
+                            <div class="flex justify-between items-start">
+                                <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">លក់ប្រចាំថ្ងៃ</p><h3 id="dashDailyAmount" class="text-2xl font-black text-emerald-600 mt-1">$0.00</h3></div>
+                                <div class="p-3 bg-emerald-50 dark:bg-emerald-950/50 rounded-2xl text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
+                                    <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+                                </div>
+                            </div>
                             <input type="date" id="searchDate" onchange="renderDashboard()" class="vck-input border px-3 py-2 rounded-xl text-xs font-bold">
                         </div>
-                        <div class="vck-card p-5 flex flex-col justify-between space-y-3">
-                            <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">លក់ប្រចាំខែ</p><h3 id="dashMonthlyAmount" class="text-2xl font-black text-indigo-600 mt-1">$0.00</h3></div>
+                        <div class="vck-card p-5 flex flex-col justify-between space-y-3 relative overflow-hidden group">
+                            <div class="flex justify-between items-start">
+                                <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">លក់ប្រចាំខែ</p><h3 id="dashMonthlyAmount" class="text-2xl font-black text-indigo-600 mt-1">$0.00</h3></div>
+                                <div class="p-3 bg-indigo-50 dark:bg-indigo-950/50 rounded-2xl text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform">
+                                    <i data-lucide="trending-up" class="w-5 h-5"></i>
+                                </div>
+                            </div>
                             <input type="month" id="searchMonth" onchange="renderDashboard()" class="vck-input border px-3 py-2 rounded-xl text-xs font-bold">
                         </div>
-                        <div class="vck-card p-5 flex flex-col justify-between">
-                            <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">ស្តុកសរុប</p><h3 id="dashTotalProducts" class="text-2xl font-black mt-1">0 មុខ</h3></div>
+                        <div class="vck-card p-5 flex flex-col justify-between group">
+                            <div class="flex justify-between items-start">
+                                <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">ស្តុកសរុប</p><h3 id="dashTotalProducts" class="text-2xl font-black mt-1">0 មុខ</h3></div>
+                                <div class="p-3 bg-sky-50 dark:bg-sky-950/50 rounded-2xl text-sky-600 dark:text-sky-400 group-hover:scale-110 transition-transform">
+                                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                                </div>
+                            </div>
                             <p class="text-[11px] text-slate-400 pt-2 border-t dark:border-slate-800">មុខទំនិញក្នុងប្រព័ន្ធ</p>
                         </div>
-                        <div class="vck-card p-5 flex flex-col justify-between">
-                            <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">ស្តុកជិតអស់ (<=5)</p><h3 id="dashLowStockCount" class="text-2xl font-black text-rose-600 mt-1">0 មុខ</h3></div>
+                        <div class="vck-card p-5 flex flex-col justify-between group">
+                            <div class="flex justify-between items-start">
+                                <div><p class="text-[10px] font-black text-slate-400 uppercase tracking-wider">ស្តុកជិតអស់ (&lt;=5)</p><h3 id="dashLowStockCount" class="text-2xl font-black text-rose-600 mt-1">0 មុខ</h3></div>
+                                <div class="p-3 bg-rose-50 dark:bg-rose-950/50 rounded-2xl text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform">
+                                    <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                                </div>
+                            </div>
                             <p class="text-[11px] font-bold text-rose-500 pt-2 border-t dark:border-slate-800">ត្រូវការបំពេញបន្ថែម</p>
                         </div>
                     </div>
 
+                    <!-- ក្រាហ្វិក និងទំនិញលក់ដាច់បំផុត -->
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <div class="vck-card lg:col-span-2 p-6 space-y-4">
-                            <h3 class="font-black text-xs uppercase tracking-wider text-slate-500">📈 ក្រាហ្វិកប្រៀបធៀបចំណូល (ខែនេះ និងខែមុន)</h3>
+                            <h3 class="font-black text-xs uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                                <i data-lucide="line-chart" class="w-4 h-4 text-indigo-500"></i>
+                                <span>ក្រាហ្វិកប្រៀបធៀបចំណូល (ខែនេះ និងខែមុន)</span>
+                            </h3>
                             <div class="w-full h-[260px]"><canvas id="comparisonChart"></canvas></div>
                         </div>
                         <div class="vck-card lg:col-span-1 p-6 space-y-4">
-                            <h3 class="font-black text-xs uppercase tracking-wider text-slate-500">📊 ទំនិញលក់ដាច់បំផុត</h3>
+                            <h3 class="font-black text-xs uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                                <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-500"></i>
+                                <span>ទំនិញលក់ដាច់បំផុត (Top Selling Products)</span>
+                            </h3>
                             <div class="w-full h-[220px]"><canvas id="bestSellersChart"></canvas></div>
                         </div>
                         <div class="vck-card lg:col-span-3 p-6 space-y-4">
-                            <h3 class="font-black text-xs uppercase tracking-wider text-slate-500">📍 តំបន់ដឹកជញ្ជូនច្រើនជាងគេ (Delivery Hotspots)</h3>
+                            <h3 class="font-black text-xs uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                                <i data-lucide="map-pin" class="w-4 h-4 text-rose-500"></i>
+                                <span>តំបន់ដឹកជញ្ជូនច្រើនជាងគេ (Delivery Hotspots)</span>
+                            </h3>
                             <div class="w-full h-[200px]"><canvas id="locationHotspotsChart"></canvas></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- SALARY TAB (Admin Only) -->
+                <section id="tab-salary" class="tab-content hidden space-y-6">
+                    <div class="vck-card p-6 space-y-5">
+                        <div class="flex justify-between items-center border-b dark:border-slate-800 pb-4">
+                            <div>
+                                <h3 class="font-black text-base flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+                                    <i data-lucide="wallet" class="w-5 h-5"></i> កំណត់ និងគ្រប់គ្រងប្រាក់ខែបុគ្គលិក
+                                </h3>
+                                <p class="text-xs text-slate-500 mt-1">មានតែ Admin ទេដែលមានសិទ្ធិកំណត់ និងកែសម្រួលប្រាក់ខែបុគ្គលិកក្នុងប្រព័ន្ធ</p>
+                            </div>
+                            <button onclick="openSalaryModal()" class="vck-btn-primary text-white px-4 py-2.5 rounded-xl text-xs font-bold cursor-pointer shadow-md flex items-center gap-1.5">
+                                <i data-lucide="plus" class="w-4 h-4"></i> បន្ថែមបុគ្គលិកថ្មី
+                            </button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="bg-slate-50 dark:bg-slate-800/80 text-[11px] font-bold text-slate-400 border-b dark:border-slate-800">
+                                        <th class="p-4 pl-6">ឈ្មោះបុគ្គលិក</th>
+                                        <th class="p-4">តួនាទី (Role)</th>
+                                        <th class="p-4">ប្រាក់ខែមូលដ្ឋាន ($)</th>
+                                        <th class="p-4">ប្រាក់បន្ថែម/បុិន្ទុ ($)</th>
+                                        <th class="p-4 text-right">ប្រាក់ខែសរុប ($)</th>
+                                        <th class="p-4 text-center">សកម្មភាព</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="salaryTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- TOMORROW DELIVERY SCHEDULE TAB -->
+                <section id="tab-tomorrow-delivery" class="tab-content hidden space-y-6">
+                    <div class="vck-card p-6 space-y-4">
+                        <h3 class="font-black text-sm border-b dark:border-slate-800 pb-3 flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                            <i data-lucide="calendar-plus" class="w-4 h-4"></i> បង្កើតកាលវិភាគដឹកជញ្ជូនសម្រាប់ថ្ងៃស្អែក
+                        </h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">អតិថិជន *</label>
+                                <input type="text" id="tomCustomer" placeholder="ឈ្មោះអតិថិជន" class="vck-input border p-3 rounded-2xl text-xs font-bold w-full">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">លេខទូរស័ព្ទ *</label>
+                                <input type="text" id="tomPhone" placeholder="លេខទូរស័ព្ទ" class="vck-input border p-3 rounded-2xl text-xs font-bold w-full">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">ទីតាំងទិសដៅ *</label>
+                                <input type="text" id="tomLocation" placeholder="ទីតាំងដឹកជញ្ជូន" class="vck-input border p-3 rounded-2xl text-xs font-bold w-full">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">ចាត់ចែងអ្នកដឹក (Driver)</label>
+                                <select id="tomDriver" class="vck-input border p-3 rounded-2xl text-xs font-bold w-full">
+                                    <option value="មិនទាន់ចាត់ចែង">--- ជ្រើសរើសអ្នកដឹក ---</option>
+                                    <option value="លាងហាក់">លាងហាក់</option>
+                                    <option value="ផាន់នី">ផាន់នី</option>
+                                    <option value="សុភាព">សុភាព</option>
+                                    <option value="ផល្លីន">ផល្លីន</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 mb-1">ចំណាំបន្ថែម</label>
+                                <input type="text" id="tomNote" placeholder="ឧ. ត្រូវដឹកពេលព្រឹកម៉ោង ៨" class="vck-input border p-3 rounded-2xl text-xs font-bold w-full">
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <button onclick="saveTomorrowDelivery()" class="vck-btn-primary text-white px-6 py-3 rounded-2xl text-xs font-bold cursor-pointer shadow-md flex items-center gap-1.5">
+                                <i data-lucide="save" class="w-4 h-4"></i> រក្សាទុកកាលវិភាគថ្ងៃស្អែក
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="vck-card overflow-hidden">
+                        <div class="p-5 border-b dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex justify-between items-center">
+                            <h3 class="font-black text-sm flex items-center gap-2">
+                                <i data-lucide="truck" class="w-4 h-4 text-amber-500"></i> បញ្ជីកាលវិភាគដឹកជញ្ជូនថ្ងៃស្អែក
+                            </h3>
+                            <span id="tomorrowDateDisplay" class="text-xs font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-950 px-3 py-1.5 rounded-xl">ថ្ងៃស្អែក</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="bg-slate-50 dark:bg-slate-800/80 text-[11px] font-bold text-slate-400 border-b dark:border-slate-800">
+                                        <th class="p-4 pl-6 text-center">ល.រ</th>
+                                        <th class="p-4">អតិថិជន</th>
+                                        <th class="p-4">ទូរស័ព្ទ</th>
+                                        <th class="p-4">ទីតាំងទិសដៅ</th>
+                                        <th class="p-4">អ្នកដឹក</th>
+                                        <th class="p-4">ចំណាំ</th>
+                                        <th class="p-4 text-center">សកម្មភាព</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tomorrowTableBody">
+                                    <tr><td colspan="7" class="p-6 text-center text-xs text-slate-400">គ្មានកាលវិភាគសម្រាប់ថ្ងៃស្អែកទេ</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </section>
@@ -144,8 +329,13 @@
                 <section id="tab-sales" class="tab-content hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
                     <div class="vck-card lg:col-span-5 p-6 space-y-4 h-fit">
                         <div class="flex justify-between items-center border-b dark:border-slate-800 pb-3">
-                            <h3 class="font-black text-sm">✍️ បង្កើតវិក្កយបត្រថ្មី</h3>
-                            <button onclick="resetInvoiceForm()" class="px-3 py-1 bg-rose-50 dark:bg-rose-950/40 text-rose-600 rounded-xl text-xs font-bold cursor-pointer hover:bg-rose-100">🔄 សម្អាត</button>
+                            <h3 class="font-black text-sm flex items-center gap-2">
+                                <i data-lucide="pen-tool" class="w-4 h-4 text-indigo-500"></i>
+                                <span>បង្កើតវិក្កយបត្រថ្មី</span>
+                            </h3>
+                            <button onclick="resetInvoiceForm()" class="px-3 py-1 bg-rose-50 dark:bg-rose-950/40 text-rose-600 rounded-xl text-xs font-bold cursor-pointer hover:bg-rose-100 flex items-center gap-1">
+                                <i data-lucide="refresh-cw" class="w-3 h-3"></i> សម្អាត
+                            </button>
                         </div>
                         <div class="grid grid-cols-2 gap-3">
                             <div><label class="block text-xs font-bold text-slate-500 mb-1">អតិថិជន *</label><input type="text" id="invoiceCustomer" class="vck-input w-full p-2.5 rounded-xl text-xs font-bold"></div>
@@ -162,12 +352,18 @@
                         <div><label class="block text-xs font-bold text-slate-500 mb-1">កាលបរិច្ឆេទ</label><input type="date" id="invoiceDate" class="vck-input w-full p-2.5 rounded-xl text-xs font-bold"></div>
 
                         <div class="flex gap-2">
-                            <button type="button" onclick="startBarcodeScanner()" class="flex-1 bg-violet-600 hover:bg-violet-700 text-white p-2.5 rounded-xl text-xs font-bold cursor-pointer shadow-md">📷 ស្កែនបាកូដ</button>
-                            <button type="button" id="voiceBtn" onclick="startVoiceOrdering()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white p-2.5 rounded-xl text-xs font-bold cursor-pointer shadow-md">🎙️ បញ្ជាដោយសំឡេង</button>
+                            <button type="button" onclick="startBarcodeScanner()" class="flex-1 bg-violet-600 hover:bg-violet-700 text-white p-2.5 rounded-xl text-xs font-bold cursor-pointer shadow-md flex items-center justify-center gap-1.5">
+                                <i data-lucide="qr-code" class="w-4 h-4"></i> ស្កែនបាកូដ
+                            </button>
+                            <button type="button" id="voiceBtn" onclick="startVoiceOrdering()" class="flex-1 bg-amber-600 hover:bg-amber-700 text-white p-2.5 rounded-xl text-xs font-bold cursor-pointer shadow-md flex items-center justify-center gap-1.5">
+                                <i data-lucide="mic" class="w-4 h-4"></i> បញ្ជាដោយសំឡេង
+                            </button>
                         </div>
 
                         <div class="p-4 border dark:border-slate-800 rounded-2xl bg-slate-50/60 dark:bg-slate-900/40 space-y-3">
-                            <h3 class="font-bold text-xs">🛒 បញ្ចូលមុខទំនិញ</h3>
+                            <h3 class="font-bold text-xs flex items-center gap-1.5">
+                                <i data-lucide="shopping-cart" class="w-4 h-4 text-indigo-500"></i> បញ្ចូលមុខទំនិញ
+                            </h3>
                             <input type="text" id="invoiceProductInput" list="productList" oninput="autoFillProductPrice()" placeholder="ជ្រើសរើសឈ្មោះទំនិញ..." class="vck-input p-2.5 w-full text-xs rounded-xl">
                             <datalist id="productList"></datalist>
                             <div class="grid grid-cols-2 gap-2">
@@ -175,11 +371,15 @@
                                 <input type="number" id="invoiceQty" value="1" min="1" class="vck-input p-2.5 w-full text-xs rounded-xl font-bold text-center">
                             </div>
                             <input type="hidden" id="invoiceProductIdHidden">
-                            <button type="button" onclick="addItemToCurrentInvoice()" class="vck-btn-primary w-full text-white p-3 rounded-xl font-bold text-xs cursor-pointer shadow-md">+ បញ្ចូលក្នុងវិក្កយបត្រ</button>
+                            <button type="button" onclick="addItemToCurrentInvoice()" class="vck-btn-primary w-full text-white p-3 rounded-xl font-bold text-xs cursor-pointer shadow-md flex items-center justify-center gap-1">
+                                <i data-lucide="plus-circle" class="w-4 h-4"></i> បញ្ចូលក្នុងវិក្កយបត្រ
+                            </button>
                         </div>
 
                         <div class="p-4 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl bg-emerald-50/40 dark:bg-emerald-950/20 space-y-3">
-                            <h3 class="font-bold text-xs text-emerald-800 dark:text-emerald-400">💵 ប្រាក់ទទួលបាន និងប្រាក់អាប់</h3>
+                            <h3 class="font-bold text-xs text-emerald-800 dark:text-emerald-400 flex items-center gap-1.5">
+                                <i data-lucide="banknote" class="w-4 h-4"></i> ប្រាក់ទទួលបាន និងប្រាក់អាប់
+                            </h3>
                             <div class="grid grid-cols-2 gap-2">
                                 <div><label class="block text-[10px] font-bold text-slate-500 mb-1">ទទួលបាន ($)</label><input type="number" id="cashReceived" step="0.01" oninput="calculateChange()" class="vck-input w-full p-2.5 rounded-xl text-xs font-bold text-right text-emerald-600"></div>
                                 <div><label class="block text-[10px] font-bold text-slate-500 mb-1">ប្រាក់អាប់ ($)</label><input type="text" id="changeDue" readonly value="$0.00" class="vck-input w-full p-2.5 rounded-xl text-xs font-bold text-right text-indigo-600 opacity-80"></div>
@@ -212,9 +412,15 @@
                             </div>
                         </div>
                         <div class="flex gap-2 flex-wrap">
-                            <button onclick="saveFinalInvoice()" class="vck-btn-primary flex-1 text-white p-3.5 rounded-2xl font-bold text-xs cursor-pointer shadow-lg min-w-[120px]">💾 Save រាយការណ៍</button>
-                            <button onclick="downloadInvoicePDF()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-2xl font-bold text-xs cursor-pointer shadow-lg min-w-[100px]">🖨️ PDF</button>
-                            <button onclick="sendDirectCustomerTelegramModal()" class="bg-sky-500 hover:bg-sky-600 text-white px-4 py-3.5 rounded-2xl font-bold text-xs cursor-pointer shadow-lg">✈️ Telegram ភ្ញៀវ</button>
+                            <button onclick="saveFinalInvoice()" class="vck-btn-primary flex-1 text-white p-3.5 rounded-2xl font-bold text-xs cursor-pointer shadow-lg min-w-[120px] flex items-center justify-center gap-1.5">
+                                <i data-lucide="save" class="w-4 h-4"></i> Save រាយការណ៍
+                            </button>
+                            <button onclick="downloadInvoicePDF()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white p-3.5 rounded-2xl font-bold text-xs cursor-pointer shadow-lg min-w-[100px] flex items-center justify-center gap-1.5">
+                                <i data-lucide="file-text" class="w-4 h-4"></i> PDF
+                            </button>
+                            <button onclick="sendDirectCustomerTelegramModal()" class="bg-sky-500 hover:bg-sky-600 text-white px-4 py-3.5 rounded-2xl font-bold text-xs cursor-pointer shadow-lg flex items-center justify-center gap-1.5">
+                                <i data-lucide="send" class="w-4 h-4"></i> Telegram ភ្ញៀវ
+                            </button>
                         </div>
                     </div>
                 </section>
@@ -223,19 +429,38 @@
                 <section id="tab-delivery" class="tab-content hidden space-y-6">
                     <div class="vck-card p-6 space-y-5">
                         <div class="flex justify-between items-center border-b dark:border-slate-800 pb-4">
-                            <div><h3 class="font-black text-sm">📊 ស្ថិតិជើងដឹកជញ្ជូនប្រចាំថ្ងៃ</h3></div>
+                            <div>
+                                <h3 class="font-black text-sm flex items-center gap-2">
+                                    <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-500"></i>
+                                    <span>ស្ថិតិជើងដឹកជញ្ជូនប្រចាំថ្ងៃ</span>
+                                </h3>
+                            </div>
                             <input type="date" id="deliveryStatDate" onchange="updateDeliveryStatsByDate()" class="vck-input border p-2 rounded-xl text-xs font-bold">
                         </div>
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            <div class="bg-indigo-50/40 dark:bg-indigo-950/20 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/50"><div><p class="text-[10px] font-extrabold text-indigo-500">លាងហាក់</p><h4 id="stat-driver-1" class="text-xl font-black mt-1">0 ជើង</h4></div></div>
-                            <div class="bg-emerald-50/40 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/50"><div><p class="text-[10px] font-extrabold text-emerald-600">ផាន់នី</p><h4 id="stat-driver-2" class="text-xl font-black mt-1">0 ជើង</h4></div></div>
-                            <div class="bg-amber-50/40 dark:bg-amber-950/20 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/50"><div><p class="text-[10px] font-extrabold text-amber-600">សុភាព</p><h4 id="stat-driver-3" class="text-xl font-black mt-1">0 ជើង</h4></div></div>
-                            <div class="bg-rose-50/40 dark:bg-rose-950/20 p-4 rounded-2xl border border-rose-100 dark:border-rose-900/50"><div><p class="text-[10px] font-extrabold text-rose-600">ផល្លីន</p><h4 id="stat-driver-4" class="text-xl font-black mt-1">0 ជើង</h4></div></div>
+                            <div class="bg-indigo-50/40 dark:bg-indigo-950/20 p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 flex items-center gap-3">
+                                <div class="p-2.5 bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 rounded-xl"><i data-lucide="user-check" class="w-5 h-5"></i></div>
+                                <div><p class="text-[10px] font-extrabold text-indigo-500">លាងហាក់</p><h4 id="stat-driver-1" class="text-xl font-black mt-0.5">0 ជើង</h4></div>
+                            </div>
+                            <div class="bg-emerald-50/40 dark:bg-emerald-950/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/50 flex items-center gap-3">
+                                <div class="p-2.5 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 rounded-xl"><i data-lucide="user-check" class="w-5 h-5"></i></div>
+                                <div><p class="text-[10px] font-extrabold text-emerald-600">ផាន់នី</p><h4 id="stat-driver-2" class="text-xl font-black mt-0.5">0 ជើង</h4></div>
+                            </div>
+                            <div class="bg-amber-50/40 dark:bg-amber-950/20 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/50 flex items-center gap-3">
+                                <div class="p-2.5 bg-amber-100 dark:bg-amber-900/40 text-amber-600 rounded-xl"><i data-lucide="user-check" class="w-5 h-5"></i></div>
+                                <div><p class="text-[10px] font-extrabold text-amber-600">សុភាព</p><h4 id="stat-driver-3" class="text-xl font-black mt-0.5">0 ជើង</h4></div>
+                            </div>
+                            <div class="bg-rose-50/40 dark:bg-rose-950/20 p-4 rounded-2xl border border-rose-100 dark:border-rose-900/50 flex items-center gap-3">
+                                <div class="p-2.5 bg-rose-100 dark:bg-rose-900/40 text-rose-600 rounded-xl"><i data-lucide="user-check" class="w-5 h-5"></i></div>
+                                <div><p class="text-[10px] font-extrabold text-rose-600">ផល្លីន</p><h4 id="stat-driver-4" class="text-xl font-black mt-0.5">0 ជើង</h4></div>
+                            </div>
                         </div>
                     </div>
                     <div class="vck-card overflow-hidden">
                         <div class="p-5 border-b dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex justify-between items-center">
-                            <h3 class="font-black text-sm">📋 បញ្ជីដឹកជញ្ជូន</h3>
+                            <h3 class="font-black text-sm flex items-center gap-2">
+                                <i data-lucide="list-todo" class="w-4 h-4 text-indigo-500"></i> បញ្ជីដឹកជញ្ជូន
+                            </h3>
                             <div class="flex gap-2">
                                 <select id="filterDeliveryDriver" onchange="filterDeliveryTable()" class="vck-input border p-2 rounded-xl text-xs font-bold"><option value="all">គ្រប់អ្នកដឹក</option><option value="លាងហាក់">លាងហាក់</option><option value="ផាន់នី">ផាន់នី</option><option value="សុភាព">សុភាព</option><option value="ផល្លីន">ផល្លីន</option></select>
                                 <select id="filterDeliveryStatus" onchange="filterDeliveryTable()" class="vck-input border p-2 rounded-xl text-xs font-bold"><option value="all">គ្រប់ស្ថានភាព</option><option value="កំពុងរៀបចំ">កំពុងរៀបចំ</option><option value="កំពុងដឹក">កំពុងដឹក</option><option value="បានប្រគល់ជូន">បានប្រគល់ជូន</option></select>
@@ -248,21 +473,37 @@
                 <!-- STOCK TAB -->
                 <section id="tab-stock" class="tab-content hidden space-y-6">
                     <div id="stock-entry-form" class="vck-card p-6 space-y-4">
-                        <h3 class="font-black text-sm border-b dark:border-slate-800 pb-3">📥 បញ្ចូលទំនិញថ្មីចូលឃ្លាំង</h3>
+                        <h3 class="font-black text-sm border-b dark:border-slate-800 pb-3 flex items-center gap-2">
+                            <i data-lucide="package-plus" class="w-4 h-4 text-emerald-500"></i> បញ្ចូលទំនិញថ្មីចូលឃ្លាំង
+                        </h3>
                         <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                             <input type="text" id="newProdName" placeholder="ឈ្មោះទំនិញ" class="vck-input border p-3 rounded-2xl text-xs font-bold">
                             <input type="text" id="newProdCat" placeholder="ប្រភេទ" class="vck-input border p-3 rounded-2xl text-xs font-bold">
                             <input type="number" id="newProdTotal" placeholder="ចំនួន" class="vck-input border p-3 rounded-2xl text-xs text-center font-bold">
                             <input type="number" step="0.01" id="newProdPrice" placeholder="តម្លៃ ($)" class="vck-input border p-3 rounded-2xl text-xs text-right font-bold">
                         </div>
-                        <div class="flex justify-end"><button onclick="addNewProductToStock()" class="vck-btn-primary text-white px-6 py-3 rounded-2xl text-xs font-bold cursor-pointer shadow-md">➕ បញ្ចូលស្តុក</button></div>
+                        <div class="flex justify-end">
+                            <button onclick="addNewProductToStock()" class="vck-btn-primary text-white px-6 py-3 rounded-2xl text-xs font-bold cursor-pointer shadow-md flex items-center gap-1.5">
+                                <i data-lucide="plus" class="w-4 h-4"></i> បញ្ចូលស្តុក
+                            </button>
+                        </div>
                     </div>
                     <div class="vck-card overflow-hidden">
                         <div class="p-5 border-b dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex justify-between items-center">
-                            <div class="flex items-center gap-2"><h3 class="font-black text-sm">📋 ទំនិញក្នុងស្តុក</h3><button onclick="exportStockToCSV()" class="bg-indigo-600 text-white px-2.5 py-1 rounded-xl text-[10px] font-bold cursor-pointer">📥 Export CSV</button></div>
-                            <input type="text" id="searchStockInput" onkeyup="searchStockFunction()" placeholder="ស្វែងរក..." class="vck-input border px-4 py-2.5 rounded-2xl text-xs font-bold w-80">
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-black text-sm flex items-center gap-2">
+                                    <i data-lucide="warehouse" class="w-4 h-4 text-indigo-500"></i> ទំនិញក្នុងស្តុក
+                                </h3>
+                                <button onclick="exportStockToCSV()" class="bg-indigo-600 text-white px-2.5 py-1 rounded-xl text-[10px] font-bold cursor-pointer flex items-center gap-1">
+                                    <i data-lucide="download" class="w-3 h-3"></i> Export CSV
+                                </button>
+                            </div>
+                            <div class="relative">
+                                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i>
+                                <input type="text" id="searchStockInput" onkeyup="searchStockFunction()" placeholder="ស្វែងរក..." class="vck-input border pl-10 pr-4 py-2 rounded-2xl text-xs font-bold w-72">
+                            </div>
                         </div>
-                        <div class="overflow-x-auto"><table class="w-full text-left"><thead><tr class="bg-slate-50 dark:bg-slate-800/80 text-[11px] font-bold text-slate-400 border-b dark:border-slate-800"><th class="p-4 pl-6 text-center">ល.រ</th><th class="p-4">ឈ្មោះ</th><th class="p-4">ប្រភេទ</th><th class="p-4 text-center">សរុប</th><th class="p-4 text-center">នៅសល់</th><th class="p-4 text-right">តម្លៃ ($)</th><th class="p-4 text-center">លុប</th></tr></thead><tbody id="stockTableBody"></tbody></table></div>
+                        <div class="overflow-x-auto"><table class="w-full text-left"><thead><tr class="bg-slate-50 dark:bg-slate-800/80 text-[11px] font-bold text-slate-400 border-b dark:border-slate-800"><th class="p-4 pl-6 text-center">ល.រ</th><th class="p-4">ឈ្មោះទំនិញ</th><th class="p-4">ប្រភេទ</th><th class="p-4 text-center">សរុប</th><th class="p-4 text-center">នៅសល់</th><th class="p-4 text-right">តម្លៃ ($)</th><th class="p-4 text-center">លុប</th></tr></thead><tbody id="stockTableBody"></tbody></table></div>
                     </div>
                 </section>
 
@@ -270,36 +511,64 @@
                 <section id="tab-attendance" class="tab-content hidden space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                         <div class="vck-card p-6 text-center space-y-4">
-                            <h3 class="font-black text-sm">⏰ ស្កែន QR វត្តមានធ្វើការ</h3>
+                            <h3 class="font-black text-sm flex items-center justify-center gap-2">
+                                <i data-lucide="qr-code" class="w-5 h-5 text-indigo-500"></i> ស្កែន QR វត្តមានធ្វើការ
+                            </h3>
                             <p class="text-xs text-slate-500">ជ្រើសរើសប្រភេទស្កែន រួចបើកកាមេរ៉ាស្កេន QR ហាង</p>
                             
                             <div class="flex gap-2 justify-center">
-                                <button onclick="setScanType('Check-in')" id="btnCheckIn" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-md cursor-pointer">🟢 ស្កែនចូល (Check-in)</button>
-                                <button onclick="setScanType('Check-out')" id="btnCheckOut" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 cursor-pointer">🔴 ស្កែនចេញ (Check-out)</button>
+                                <button onclick="setScanType('Check-in')" id="btnCheckIn" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-emerald-600 text-white shadow-md cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i data-lucide="log-in" class="w-4 h-4"></i> ស្កែនចូល (Check-in)
+                                </button>
+                                <button onclick="setScanType('Check-out')" id="btnCheckOut" class="flex-1 py-2.5 px-4 rounded-xl text-xs font-bold bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 cursor-pointer flex items-center justify-center gap-1.5">
+                                    <i data-lucide="log-out" class="w-4 h-4"></i> ស្កែនចេញ (Check-out)
+                                </button>
                             </div>
 
                             <div id="lateReasonContainer" class="hidden text-left space-y-1 pt-2">
-                                <label class="block text-[11px] font-bold text-rose-500">⚠️ ហេតុផលចូលយឺត (បើមាន):</label>
+                                <label class="block text-[11px] font-bold text-rose-500 flex items-center gap-1">
+                                    <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> ហេតុផលចូលយឺត (បើមាន):
+                                </label>
                                 <input type="text" id="attendanceLateReason" placeholder="ឧ. ជាប់ស្ទះចរាចរណ៍ / មានធុរៈផ្ទាល់ខ្លួន..." class="vck-input w-full p-2.5 rounded-xl text-xs font-bold">
                             </div>
 
-                            <button onclick="startAttendanceScanner()" class="vck-btn-primary w-full text-white p-3.5 rounded-2xl font-bold text-xs cursor-pointer shadow-md mt-2">📷 បើកកាមេរ៉ាស្កេន QR</button>
+                            <button onclick="startAttendanceScanner()" class="vck-btn-primary w-full text-white p-3.5 rounded-2xl font-bold text-xs cursor-pointer shadow-md mt-2 flex items-center justify-center gap-2">
+                                <i data-lucide="camera" class="w-4 h-4"></i> បើកកាមេរ៉ាស្កេន QR
+                            </button>
                             <div id="attendanceReader" class="w-full overflow-hidden rounded-2xl hidden mt-3 border"></div>
-                            <button id="closeAttendanceCam" onclick="stopAttendanceScanner()" class="hidden w-full bg-rose-500 text-white p-2 rounded-xl text-xs font-bold cursor-pointer">បិទកាមេរ៉ា</button>
+                            <button id="closeAttendanceCam" onclick="stopAttendanceScanner()" class="hidden w-full bg-rose-500 text-white p-2 rounded-xl text-xs font-bold cursor-pointer flex items-center justify-center gap-1">
+                                <i data-lucide="x" class="w-4 h-4"></i> បិទកាមេរ៉ា
+                            </button>
                         </div>
                         <div class="vck-card p-6 space-y-4">
-                            <h3 class="font-black text-sm border-b dark:border-slate-800 pb-3">📌 ព័ត៌មានទីតាំង និងសុពលភាព</h3>
-                            <div class="text-xs space-y-2 text-slate-600 dark:text-slate-300">
-                                <p>📍 <strong>ទីតាំងហាង:</strong> VCK SHOP (ស្កែនក្នុងចម្ងាយកំណត់)</p>
-                                <p>🕒 <strong>ម៉ោងកំណត់ចូល:</strong> មុនម៉ោង 08:00 ព្រឹក</p>
-                                <p id="geoStatus" class="font-bold text-indigo-600 dark:text-indigo-400">រួចរាល់សម្រាប់ការស្កែន...</p>
+                            <h3 class="font-black text-sm border-b dark:border-slate-800 pb-3 flex items-center gap-2">
+                                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i> ព័ត៌មានទីតាំង និងម៉ោងធ្វើការ
+                            </h3>
+                            <div class="text-xs space-y-3 text-slate-600 dark:text-slate-300">
+                                <p class="flex items-center gap-2">
+                                    <i data-lucide="map-pin" class="w-4 h-4 text-indigo-500"></i> 
+                                    <strong>ទីតាំងហាង:</strong> VCK SHOP (ស្កែនក្នុងចម្ងាយកំណត់)
+                                </p>
+                                <p class="flex items-center gap-2">
+                                    <i data-lucide="log-in" class="w-4 h-4 text-emerald-500"></i> 
+                                    <strong>ម៉ោងចូលធ្វើការ:</strong> ម៉ោង 08:00 ព្រឹក
+                                </p>
+                                <p class="flex items-center gap-2">
+                                    <i data-lucide="log-out" class="w-4 h-4 text-rose-500"></i> 
+                                    <strong>ម៉ោងចេញពីការ:</strong> ម៉ោង 05:00 ល្ងាច
+                                </p>
+                                <p id="geoStatus" class="font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-2 pt-2 border-t dark:border-slate-800">
+                                    <i data-lucide="navigation" class="w-4 h-4"></i> រួចរាល់សម្រាប់ការស្កែន...
+                                </p>
                             </div>
                         </div>
                     </div>
 
                     <div id="adminAttendanceCard" class="vck-card p-6 max-w-4xl mx-auto space-y-4 hidden">
                         <div class="flex justify-between items-center border-b dark:border-slate-800 pb-3">
-                            <h3 class="font-black text-sm">📋 ប្រវត្តិវត្តមានបុគ្គលិក (សម្រាប់ Admin មើល)</h3>
+                            <h3 class="font-black text-sm flex items-center gap-2">
+                                <i data-lucide="clipboard-list" class="w-4 h-4 text-indigo-500"></i> ប្រវត្តិវត្តមានបុគ្គលិក (សម្រាប់ Admin មើល)
+                            </h3>
                             <input type="date" id="attendanceFilterDate" onchange="renderAttendanceTable()" class="vck-input border p-2 rounded-xl text-xs font-bold">
                         </div>
                         <div class="overflow-x-auto">
@@ -321,10 +590,17 @@
                 <!-- CUSTOMER HISTORY TAB -->
                 <section id="tab-customer-history" class="tab-content hidden space-y-6">
                     <div class="vck-card p-6 max-w-2xl mx-auto space-y-4">
-                        <h3 class="font-black text-base border-b dark:border-slate-800 pb-4">🔍 ស្វែងរកប្រវត្តិទិញអតិថិជន</h3>
+                        <h3 class="font-black text-base border-b dark:border-slate-800 pb-4 flex items-center gap-2">
+                            <i data-lucide="user-search" class="w-5 h-5 text-indigo-500"></i> ស្វែងរកប្រវត្តិទិញអតិថិជន
+                        </h3>
                         <div class="flex gap-3">
-                            <input type="text" id="searchCustPhone" placeholder="លេខទូរស័ព្ទ..." class="vck-input flex-1 p-3.5 rounded-2xl text-xs font-bold">
-                            <button onclick="searchCustomerHistory()" class="vck-btn-primary text-white px-7 py-3.5 rounded-2xl text-xs font-bold cursor-pointer shadow-md">🔍 ស្វែងរក</button>
+                            <div class="relative flex-1">
+                                <i data-lucide="phone" class="w-4 h-4 absolute left-3.5 top-4 text-slate-400"></i>
+                                <input type="text" id="searchCustPhone" placeholder="លេខទូរស័ព្ទ..." class="vck-input w-full pl-10 pr-3 py-3.5 rounded-2xl text-xs font-bold">
+                            </div>
+                            <button onclick="searchCustomerHistory()" class="vck-btn-primary text-white px-7 py-3.5 rounded-2xl text-xs font-bold cursor-pointer shadow-md flex items-center gap-1.5">
+                                <i data-lucide="search" class="w-4 h-4"></i> ស្វែងរក
+                            </button>
                         </div>
                     </div>
                     <div id="custHistoryResult" class="hidden space-y-6 max-w-5xl mx-auto">
@@ -337,10 +613,12 @@
                     </div>
                 </section>
 
-                <!-- CAR CONTACTS TAB (NEW) -->
+                <!-- CAR CONTACTS TAB -->
                 <section id="tab-car-contacts" class="tab-content hidden space-y-6">
                     <div class="vck-card p-6 space-y-4">
-                        <h3 class="font-black text-sm border-b dark:border-slate-800 pb-3">🚐 បញ្ចូលលេខទូរស័ព្ទឡាន និងចំណតថ្មី</h3>
+                        <h3 class="font-black text-sm border-b dark:border-slate-800 pb-3 flex items-center gap-2">
+                            <i data-lucide="bus" class="w-4 h-4 text-teal-500"></i> បញ្ចូលលេខទូរស័ព្ទឡាន និងចំណតថ្មី
+                        </h3>
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-500 mb-1">ខេត្តគោលដៅ *</label>
@@ -360,14 +638,21 @@
                             <input type="text" id="carNote" placeholder="ចំណាំបន្ថែម (ឧ. ចេញដំណើរម៉ោង ២ រសៀល)" class="vck-input border p-3 rounded-2xl text-xs font-bold">
                         </div>
                         <div class="flex justify-end">
-                            <button onclick="saveCarContact()" class="vck-btn-primary text-white px-6 py-3 rounded-2xl text-xs font-bold cursor-pointer shadow-md">💾 រក្សាទុកលេខឡាន</button>
+                            <button onclick="saveCarContact()" class="vck-btn-primary text-white px-6 py-3 rounded-2xl text-xs font-bold cursor-pointer shadow-md flex items-center gap-1.5">
+                                <i data-lucide="save" class="w-4 h-4"></i> រក្សាទុកលេខឡាន
+                            </button>
                         </div>
                     </div>
 
                     <div class="vck-card overflow-hidden">
                         <div class="p-5 border-b dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/40 flex flex-col sm:flex-row justify-between items-center gap-4">
-                            <h3 class="font-black text-sm">📋 បញ្ជីលេខទូរស័ព្ទឡាន និងចំណតតាមខេត្ត</h3>
-                            <input type="text" id="searchCarInput" onkeyup="searchCarFunction()" placeholder="ស្វែងរកតាមខេត្ត, ចំណត ឬ លេខទូរស័ព្ទ..." class="vck-input border px-4 py-2.5 rounded-2xl text-xs font-bold w-full sm:w-80">
+                            <h3 class="font-black text-sm flex items-center gap-2">
+                                <i data-lucide="contact-2" class="w-4 h-4 text-teal-500"></i> បញ្ជីលេខទូរស័ព្ទឡាន និងចំណតតាមខេត្ត
+                            </h3>
+                            <div class="relative w-full sm:w-80">
+                                <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-3 text-slate-400"></i>
+                                <input type="text" id="searchCarInput" onkeyup="searchCarFunction()" placeholder="ស្វែងរកតាមខេត្ត, ចំណត ឬ លេខទូរស័ព្ទ..." class="vck-input border pl-10 pr-4 py-2.5 rounded-2xl text-xs font-bold w-full">
+                            </div>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left">
@@ -394,33 +679,98 @@
     </div>
 
     <!-- Modals -->
+    <div id="salaryModal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+        <div class="vck-card p-6 w-full max-w-md shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b dark:border-slate-800 pb-3">
+                <h3 class="font-black text-sm flex items-center gap-2">
+                    <i data-lucide="wallet" class="w-4 h-4 text-indigo-500"></i> កំណត់ប្រាក់ខែបុគ្គលិក
+                </h3>
+                <button onclick="closeSalaryModal()" class="font-bold cursor-pointer text-slate-400 hover:text-rose-500 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">ឈ្មោះបុគ្គលិក:</label>
+                    <input type="text" id="modalStaffName" placeholder="ឧ. វិច្ឆិកា / លាងហាក់" class="vck-input w-full p-3 rounded-2xl text-xs font-bold">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">តួនាទី (Role):</label>
+                    <select id="modalStaffRole" class="vck-input w-full p-3 rounded-2xl text-xs font-bold">
+                        <option value="Admin">Admin</option>
+                        <option value="Cashier">Cashier</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">ប្រាក់ខែមូលដ្ឋាន ($):</label>
+                    <input type="number" step="0.01" id="modalBaseSalary" placeholder="0.00" class="vck-input w-full p-3 rounded-2xl text-xs font-bold">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 mb-1">ប្រាក់បន្ថែម ($):</label>
+                    <input type="number" step="0.01" id="modalBonusSalary" placeholder="0.00" class="vck-input w-full p-3 rounded-2xl text-xs font-bold">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 pt-2 border-t dark:border-slate-800">
+                <button onclick="closeSalaryModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 cursor-pointer">បោះបង់</button>
+                <button onclick="saveStaffSalary()" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-indigo-600 text-white cursor-pointer shadow-md">រក្សាទុក</button>
+            </div>
+        </div>
+    </div>
+
     <div id="barcodeModal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4 z-50">
         <div class="vck-card p-6 w-full max-w-md shadow-2xl space-y-4">
-            <div class="flex justify-between items-center"><h3 class="font-black text-sm">📷 ស្កែនបាកូដទំនិញ</h3><button onclick="stopBarcodeScanner()" class="font-bold cursor-pointer">✕</button></div>
+            <div class="flex justify-between items-center border-b dark:border-slate-800 pb-3">
+                <h3 class="font-black text-sm flex items-center gap-2">
+                    <i data-lucide="camera" class="w-4 h-4 text-indigo-500"></i> ស្កែនបាកូដទំនិញ
+                </h3>
+                <button onclick="stopBarcodeScanner()" class="font-bold cursor-pointer text-slate-400 hover:text-rose-500 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
             <div id="reader" class="w-full overflow-hidden rounded-2xl"></div>
         </div>
     </div>
 
     <div id="invoiceModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50">
         <div class="vck-card p-6 w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl">
-            <div class="flex justify-between items-center mb-4 border-b dark:border-slate-800 pb-3"><h3 class="font-black text-base" id="modalTitle">📄 ព័ត៌មានវិក្កយបត្រ</h3><button onclick="closeInvoiceModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold cursor-pointer">✕</button></div>
+            <div class="flex justify-between items-center mb-4 border-b dark:border-slate-800 pb-3">
+                <h3 class="font-black text-base flex items-center gap-2" id="modalTitle">
+                    <i data-lucide="file-text" class="w-5 h-5 text-indigo-500"></i> ព័ត៌មានវិក្កយបត្រ
+                </h3>
+                <button onclick="closeInvoiceModal()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold cursor-pointer hover:bg-rose-100 dark:hover:bg-rose-900/40 hover:text-rose-600">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
             <div id="modalInvoiceContent" class="space-y-4"></div>
         </div>
     </div>
 
     <div id="telegramModal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
         <div class="vck-card p-6 w-full max-w-md shadow-2xl space-y-4">
-            <div class="flex justify-between items-center border-b dark:border-slate-800 pb-3"><h3 class="font-black text-sm">✈️ ផ្ញើវិក្កយបត្រទៅ Telegram អតិថិជន</h3><button onclick="closeTelegramModal()" class="font-bold cursor-pointer">✕</button></div>
+            <div class="flex justify-between items-center border-b dark:border-slate-800 pb-3">
+                <h3 class="font-black text-sm flex items-center gap-2">
+                    <i data-lucide="send" class="w-4 h-4 text-sky-500"></i> ផ្ញើវិក្កយបត្រទៅ Telegram អតិថិជន
+                </h3>
+                <button onclick="closeTelegramModal()" class="font-bold cursor-pointer text-slate-400 hover:text-rose-500 p-1">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
             <div class="space-y-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-500 mb-1">លេខទូរស័ព្ទអតិថិជន (Phone):</label>
                     <input type="text" id="targetCustomerPhone" placeholder="ឧ. 012345678" class="vck-input w-full p-3 rounded-2xl text-xs font-bold">
                 </div>
-                <div><button onclick="shareDirectToTelegramLink()" class="vck-btn-primary w-full text-white p-3 rounded-2xl font-bold text-xs cursor-pointer shadow-md flex items-center justify-center gap-2"><span>🔗 Share / បើក Telegram ផ្ញើផ្ទាល់</span></button></div>
+                <div>
+                    <button onclick="shareDirectToTelegramLink()" class="vck-btn-primary w-full text-white p-3 rounded-2xl font-bold text-xs cursor-pointer shadow-md flex items-center justify-center gap-2">
+                        <i data-lucide="share-2" class="w-4 h-4"></i> Share / បើក Telegram ផ្ញើផ្ទាល់
+                    </button>
+                </div>
             </div>
             <div class="flex justify-end gap-2 pt-2 border-t dark:border-slate-800">
                 <button onclick="closeTelegramModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-200 dark:bg-slate-800 cursor-pointer">បោះបង់</button>
-                <button onclick="confirmSendTelegramByPhone()" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 text-white cursor-pointer shadow-md">ផ្ញើតាមរយៈ Bot</button>
+                <button onclick="confirmSendTelegramByPhone()" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 text-white cursor-pointer shadow-md flex items-center gap-1.5">
+                    <i data-lucide="send" class="w-3.5 h-3.5"></i> ផ្ញើតាមរយៈ Bot
+                </button>
             </div>
         </div>
     </div>
