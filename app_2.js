@@ -71,11 +71,23 @@ async function getTelegramChatId() {
     return null;
 }
 
-async function sendTelegramNotification(invCode, customer, phone, location, total, items) {
+// 🚀 Telegram Attendance Alert Function
+async function sendTelegramAttendanceAlert(staffName, type, time, lateReason) {
     const chatId = await getTelegramChatId();
     if (!chatId) return;
-    const itemsListStr = items.map(i => `▪️ <b>${i.name}</b> (x${i.qty}) : <b>$${i.totalPrice.toFixed(2)}</b>`).join('\n');
-    const message = `🚨 <b>មានការបញ្ជាទិញថ្មី! (VCK SHOP)</b>\n\n🧾 លេខវិក្កយបត្រ: <b>${invCode}</b>\n👤 អតិថិជន: <b>${customer}</b> (${phone})\n📍 ទីតាំងដឹក: <b>${location}</b>\n━━━━━━━━━━━━━━━━━━━\n🛒 <b>ទំនិញ៖</b>\n${itemsListStr}\n━━━━━━━━━━━━━━━━━━━\n💰 <b>សរុប: $${total.toFixed(2)}</b>`;
+
+    let emoji = type === 'Check-in' ? '🟢' : '🔴';
+    let message = `${emoji} <b>ការជូនដំណឹងវត្តមានបុគ្គលិក (VCK SHOP)</b>\n\n`;
+    message += `👤 បុគ្គលិក: <b>${staffName}</b>\n`;
+    message += `📌 សកម្មភាព: <b>${type}</b>\n`;
+    message += `⏰ ម៉ោងស្កែន: <b>${time}</b>\n`;
+    if (type === 'Check-in' && lateReason && lateReason !== '-') {
+        message += `⚠️ ស្ថានភាព: <b style="color:red;">មកយឺត</b>\n`;
+        message += `📝 ហេតុផល: ${lateReason}\n`;
+    } else {
+        message += `✨ ស្ថានភាព: <b>ទៀងទាត់ពេលវេលា</b>\n`;
+    }
+
     await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,15 +118,37 @@ function shareDirectToTelegramLink() {
 }
 
 async function confirmSendTelegramByPhone() {
-    const chatId = await getTelegramChatId();
-    if (!chatId) return alert("⚠️ រកមិនឃើញ Chat ID!");
-    alert("✅ បានផ្ញើវិក្កយបត្រជោគជ័យ!");
-    closeTelegramModal();
-}
+    const customerPhone = document.getElementById('targetCustomerPhone').value.trim();
+    if (!customerPhone) return alert("⚠️ សូមបញ្ចូលលេខទូរស័ព្ទអតិថិជន!");
 
-function sendDeliverySuccessNotice(phone, invCode, name) {
-    const text = `🎉 ✨ **អបអរសាទរ ${name}!** ✨ 🎉\n📦 វិក្កយបត្រ: ${invCode}\n🚚 ទំនិញបានដឹកជញ្ជូនដល់ដៃដោយសុវត្ថិភាព!\n🌟 **VCK SHOP**`;
-    window.open(`https://t.me/share/url?url=&text=${encodeURIComponent(text)}`, '_blank');
+    const customer = document.getElementById('invoiceCustomer').value || 'អតិថិជន';
+    const location = document.getElementById('invoiceLocation').value || '-';
+    const deliveryFee = parseFloat(document.getElementById('invoiceDeliveryFee').value) || 0;
+    const discount = parseFloat(document.getElementById('invoiceDiscount').value) || 0;
+    const grandTotal = Math.max(0, currentInvoiceItems.reduce((s, i) => s + i.totalPrice, 0) + deliveryFee - discount);
+    
+    const itemsListStr = currentInvoiceItems.map(i => `▪️ ${i.name} (x${i.qty}) : $${i.totalPrice.toFixed(2)}`).join('\n');
+    const message = `🛍️ <b>VCK SHOP - វិក្កយបត្រផ្លូវការ</b>\n👤 អតិថិជន: ${customer} (${customerPhone})\n📍 ទីតាំង: ${location}\n━━━━━━━━━━━━━━━━━━━\n🛒 <b>ទំនិញ៖</b>\n${itemsListStr}\n━━━━━━━━━━━━━━━━━━━\n🚚 សេវាដឹក: $${deliveryFee.toFixed(2)}\n🏷️ បញ្ចុះតម្លៃ: $${discount.toFixed(2)}\n💰 <b>សរុបរួម: $${grandTotal.toFixed(2)}</b>\n\n🙏 សូមអរគុណ!`;
+
+    const chatId = await getTelegramChatId();
+    if (!chatId) return alert("⚠️ រកមិនឃើញ Telegram Chat ID ទេ! សូមផ្ញើសារ Bot មួយជាមុនសិន។");
+
+    try {
+        const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' })
+        });
+        const data = await response.json();
+        if (data.ok) {
+            alert("✅ បានផ្ញើវិក្កយបត្រទៅ Telegram ជោគជ័យ!");
+            closeTelegramModal();
+        } else {
+            alert("❌ បរាជ័យក្នុងការផ្ញើ៖ " + data.description);
+        }
+    } catch (error) {
+        alert("❌ មានបញ្ហាបច្ចេកទេស: " + error.message);
+    }
 }
 
 function applyUserRolePermissions() {
@@ -132,9 +166,7 @@ function applyUserRolePermissions() {
 function initTheme() {
     const savedTheme = localStorage.getItem('vck_theme');
     const isDark = savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
-    if (isDark) {
-        document.documentElement.classList.add('dark');
-    }
+    if (isDark) { document.documentElement.classList.add('dark'); }
     updateThemeIcon(isDark);
 }
 
@@ -181,7 +213,7 @@ async function handleLogin() {
         initSystemAfterLogin();
     } catch (e) {
         errorEl.innerText = "⚠️ ឈ្មោះអ្នកប្រើប្រាស់ ឬ លេខសម្ងាត់មិនត្រឹមត្រូវ!";
-        errorEl.classList.add('hidden'); // Fix error banner state
+        errorEl.classList.remove('hidden');
     }
 }
 
@@ -299,15 +331,11 @@ function seedInitialData() {
     const initialProducts = [
         { id: 101, name: "ចានប៉សឺឡែនប្រណិត 10 אינץ'", cat: "ចានអាហារ", total: 100, avail: 85, price: 4.50 },
         { id: 102, name: "កែវស្រាក្រហម Crystal", cat: "កែវប្រណិត", total: 150, avail: 120, price: 3.20 },
-        { id: 103, name: "ស្លាបព្រាស៊ុប អ៊ីណុក Stainless", cat: "សម្ភារៈតុ", total: 300, avail: 250, price: 1.20 },
-        { id: 104, name: "ឈុតចានស៊ុបអាពាហ៍ពិពាហ៍", cat: "ឈុតសេរ៉ាមិច", total: 50, avail: 42, price: 25.00 },
-        { id: 105, name: "ជើងពានផ្លែឈើអាពាហ៍ពិពាហ៍", cat: "ជើងពាន", total: 80, avail: 45, price: 12.50 }
+        { id: 103, name: "ស្លាបព្រាស៊ុប អ៊ីណុក Stainless", cat: "សម្ភារៈតុ", total: 300, avail: 250, price: 1.20 }
     ];
-    
     const initialSales = [
         { invCode: "INV-100201", customer: "សុខ ជា", phone: "012888999", location: "ទួលគោក, ភ្នំពេញ", date: new Date().toISOString().split('T')[0], total: 76.00, items: [{ productId: 101, name: "ចានប៉សឺឡែនប្រណិត", qty: 10, price: 4.5, totalPrice: 45 }] }
     ];
-
     const initialDeliveries = [
         { invCode: "INV-100201", customer: "សុខ ជា", phone: "012888999", location: "ទួលគោក, ភ្នំពេញ", driver: "លាងហាក់", status: "បានប្រគល់ជូន" }
     ];
@@ -367,7 +395,12 @@ async function saveAttendanceRecord(type) {
     const now = new Date(), date = now.toISOString().split('T')[0], time = now.toLocaleTimeString('en-US', { hour12: true });
     const reason = (type === 'Check-in' && now.getHours() >= 8) ? (document.getElementById('attendanceLateReason')?.value.trim() || 'មកយឺត') : '-';
     if (attendanceData.some(a => a.staffName === currentUser.name && a.date === date && a.type === type)) return alert(`⚠️ បាន ${type} រួចរាល់ហើយថ្ងៃនេះ!`);
+    
     await database.ref('attendance').push({ staffName: currentUser.name, type, date, time, lateReason: reason, timestamp: Date.now() });
+    
+    // 🚀 បញ្ជូនដំណឹងទៅ Telegram ភ្លាមៗ
+    await sendTelegramAttendanceAlert(currentUser.name, type, time, reason);
+
     alert(`🎉 ${currentUser.name} បាន ${type} ជោគជ័យ!`);
 }
 
@@ -379,7 +412,6 @@ function renderAttendanceTable() {
     tbody.innerHTML = list.length === 0 ? `<tr><td colspan="4" class="p-4 text-center text-xs text-slate-400">គ្មានទិន្នន័យ</td></tr>` : list.map(a => `<tr class="text-xs border-b dark:border-slate-800"><td class="p-3 pl-4 font-bold">${a.staffName}</td><td class="p-3"><span class="px-2 py-1 rounded-lg text-[10px] font-bold ${a.type==='Check-in'?'bg-emerald-100 text-emerald-700':'bg-rose-100 text-rose-700'}">${a.type}</span></td><td class="p-3">${a.date} | ${a.time}</td><td class="p-3 text-rose-600 font-bold">${a.lateReason}</td></tr>`).join('');
 }
 
-// Salary management
 function openSalaryModal() {
     if (currentUser?.role !== 'Admin') return alert("⚠️ គ្មានសិទ្ធិ!");
     document.getElementById('modalStaffName').value = '';
@@ -389,18 +421,14 @@ function openSalaryModal() {
     refreshIcons();
 }
 
-function closeSalaryModal() {
-    document.getElementById('salaryModal').classList.add('hidden');
-}
+function closeSalaryModal() { document.getElementById('salaryModal').classList.add('hidden'); }
 
 async function saveStaffSalary() {
     const name = document.getElementById('modalStaffName').value.trim();
     const role = document.getElementById('modalStaffRole').value;
     const base = parseFloat(document.getElementById('modalBaseSalary').value) || 0;
     const bonus = parseFloat(document.getElementById('modalBonusSalary').value) || 0;
-
     if (!name || isNaN(base)) return alert("⚠️ សូមបំពេញឈ្មោះ និងប្រាក់ខែឱ្យបានត្រឹមត្រូវ!");
-
     const id = Date.now();
     await database.ref('salaries/' + id).set({ id, name, role, base, bonus, total: base + bonus });
     alert("✅ រក្សាទុកប្រាក់ខែបុគ្គលិកជោគជ័យ!");
@@ -411,15 +439,11 @@ function renderSalaryTable() {
     if (currentUser?.role !== 'Admin') return;
     const tbody = document.getElementById('salaryTableBody');
     if (!tbody) return;
-
     const list = salaryData.length > 0 ? salaryData : [
         { id: 1, name: 'វិច្ឆិកា', role: 'Admin', base: 600, bonus: 50, total: 650 },
         { id: 2, name: 'លាងហាក់', role: 'Admin', base: 600, bonus: 50, total: 650 },
-        { id: 3, name: 'ផាន់នី', role: 'Cashier', base: 350, bonus: 20, total: 370 },
-        { id: 4, name: 'សុភាព', role: 'Cashier', base: 350, bonus: 20, total: 370 },
-        { id: 5, name: 'ផល្លីន', role: 'Cashier', base: 350, bonus: 20, total: 370 }
+        { id: 3, name: 'ផាន់នី', role: 'Cashier', base: 350, bonus: 20, total: 370 }
     ];
-
     tbody.innerHTML = list.map(s => `
         <tr class="text-xs border-b dark:border-slate-800">
             <td class="p-4 pl-6 font-bold">${s.name}</td>
@@ -427,49 +451,33 @@ function renderSalaryTable() {
             <td class="p-4">$${parseFloat(s.base).toFixed(2)}</td>
             <td class="p-4 text-emerald-600 font-bold">+$${parseFloat(s.bonus).toFixed(2)}</td>
             <td class="p-4 text-right font-black text-indigo-600">$${parseFloat(s.total).toFixed(2)}</td>
-            <td class="p-4 text-center">
-                <button onclick="deleteSalary(${s.id})" class="text-rose-600 hover:scale-110 cursor-pointer p-1" title="លុប">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
-            </td>
+            <td class="p-4 text-center"><button onclick="deleteSalary(${s.id})" class="text-rose-600 hover:scale-110 cursor-pointer p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
         </tr>
     `).join('');
     refreshIcons();
 }
 
 async function deleteSalary(id) {
-    if (confirm("⚠️ តើអ្នកពិតជាចង់លុបទិន្នន័យប្រាក់ខែនេះមែនទេ?")) {
-        await database.ref('salaries/' + id).remove();
-        alert("🗑️ បានលុបដោយជោគជ័យ!");
-    }
+    if (confirm("⚠️ លុបទិន្នន័យប្រាក់ខែនេះ?")) await database.ref('salaries/' + id).remove();
 }
 
-// Tomorrow delivery schedule
 async function saveTomorrowDelivery() {
     const customer = document.getElementById('tomCustomer').value.trim();
     const phone = document.getElementById('tomPhone').value.trim();
     const location = document.getElementById('tomLocation').value.trim();
     const driver = document.getElementById('tomDriver').value;
     const note = document.getElementById('tomNote').value.trim() || '-';
-
-    if (!customer || !phone || !location) {
-        alert("⚠️ សូមបំពេញព័ត៌មានអតិថិជន លេខទូរស័ព្ទ និងទីតាំងឱ្យបានគ្រប់គ្រាន់!");
-        return;
-    }
-
+    if (!customer || !phone || !location) return alert("⚠️ សូមបំពេញព័ត៌មានឱ្យគ្រប់គ្រាន់!");
     const id = Date.now();
     await database.ref('tomorrowDeliveries/' + id).set({ id, customer, phone, location, driver, note, status: 'រៀបចំសម្រាប់ថ្ងៃស្អែក' });
     alert("🎉 រក្សាទុកកាលវិភាគដឹកថ្ងៃស្អែកជោគជ័យ!");
     ['tomCustomer', 'tomPhone', 'tomLocation', 'tomNote'].forEach(id => document.getElementById(id).value = '');
-    document.getElementById('tomDriver').value = 'មិនទាន់ចាត់ចែង';
 }
 
 function renderTomorrowDeliveryTable() {
     const tbody = document.getElementById('tomorrowTableBody');
     if (!tbody) return;
-
-    tbody.innerHTML = tomorrowDeliveryData.length === 0 ? 
-        `<tr><td colspan="7" class="p-6 text-center text-xs text-slate-400">គ្មានកាលវិភាគសម្រាប់ថ្ងៃស្អែកទេ</td></tr>` : 
+    tbody.innerHTML = tomorrowDeliveryData.length === 0 ? `<tr><td colspan="7" class="p-6 text-center text-xs text-slate-400">គ្មានកាលវិភាគសម្រាប់ថ្ងៃស្អែកទេ</td></tr>` : 
         tomorrowDeliveryData.map((d, i) => `
             <tr class="text-xs border-b dark:border-slate-800">
                 <td class="p-4 pl-6 text-center font-bold text-slate-400">${i + 1}</td>
@@ -478,21 +486,14 @@ function renderTomorrowDeliveryTable() {
                 <td class="p-4">${d.location}</td>
                 <td class="p-4 font-bold text-indigo-600">${d.driver}</td>
                 <td class="p-4 text-slate-500">${d.note}</td>
-                <td class="p-4 text-center">
-                    <button onclick="deleteTomorrowDelivery(${d.id})" class="text-rose-600 hover:scale-110 cursor-pointer p-1" title="លុប">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
-                </td>
+                <td class="p-4 text-center"><button onclick="deleteTomorrowDelivery(${d.id})" class="text-rose-600 hover:scale-110 cursor-pointer p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
             </tr>
         `).join('');
     refreshIcons();
 }
 
 async function deleteTomorrowDelivery(id) {
-    if (confirm("⚠️ តើអ្នកពិតជាចង់លុបកាលវិភាគនេះមែនទេ?")) {
-        await database.ref('tomorrowDeliveries/' + id).remove();
-        alert("🗑️ បានលុបដោយជោគជ័យ!");
-    }
+    if (confirm("⚠️ លុបកាលវិភាគនេះ?")) await database.ref('tomorrowDeliveries/' + id).remove();
 }
 
 function setupLivePreviewInputs() {
@@ -569,11 +570,7 @@ function renderInvoicePreviewTable() {
             <td class="p-2 text-center">${item.qty}</td>
             <td class="p-2 text-right">$${item.price.toFixed(2)}</td>
             <td class="p-2 text-right font-bold">$${item.totalPrice.toFixed(2)}</td>
-            <td class="p-2 text-center">
-                <button onclick="removeInvoiceItem(${i})" class="text-rose-500 hover:scale-110 cursor-pointer p-1">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                </button>
-            </td>
+            <td class="p-2 text-center"><button onclick="removeInvoiceItem(${i})" class="text-rose-500 hover:scale-110 cursor-pointer p-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button></td>
         </tr>`;
     }).join('');
 
@@ -709,17 +706,7 @@ function renderCharts() {
         if (comparisonChartInstance) comparisonChartInstance.destroy();
         comparisonChartInstance = new Chart(ctx1, { 
             type: 'line', 
-            data: { 
-                labels: ['សប្តាហ៍ ១', 'សប្តាហ៍ ២', 'សប្តាហ៍ ៣', 'សប្តាហ៍ ៤'], 
-                datasets: [{ 
-                    label: 'ចំណូលប្រចាំសប្តាហ៍ ($)', 
-                    data: [180, 320, 450, 680], 
-                    borderColor: '#6366f1', 
-                    backgroundColor: 'rgba(99, 102, 241, 0.15)', 
-                    fill: true, 
-                    tension: 0.4 
-                }] 
-            }, 
+            data: { labels: ['សប្តាហ៍ ១', 'សប្តាហ៍ ២', 'សប្តាហ៍ ៣', 'សប្តាហ៍ ៤'], datasets: [{ label: 'ចំណូល ($)', data: [180, 320, 450, 680], borderColor: '#6366f1', backgroundColor: 'rgba(99, 102, 241, 0.15)', fill: true, tension: 0.4 }] }, 
             options: { responsive: true, maintainAspectRatio: false } 
         });
     }
@@ -727,20 +714,10 @@ function renderCharts() {
     const ctx2 = document.getElementById('bestSellersChart')?.getContext('2d');
     if (ctx2) {
         if (myChartInstance) myChartInstance.destroy();
-        const topProducts = productsData.length > 0 ? productsData.slice(0, 5) : [
-            { name: 'ចានប៉សឺឡែន', total: 100, avail: 20 },
-            { name: 'កែវស្រា Crystal', total: 150, avail: 50 },
-            { name: 'ឈុតចានស៊ុប', total: 80, avail: 10 }
-        ];
+        const topProducts = productsData.length > 0 ? productsData.slice(0, 5) : [{ name: 'ចានប៉សឺឡែន', total: 100, avail: 20 }];
         myChartInstance = new Chart(ctx2, { 
             type: 'doughnut', 
-            data: { 
-                labels: topProducts.map(p => p.name), 
-                datasets: [{ 
-                    data: topProducts.map(p => p.total - p.avail), 
-                    backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] 
-                }] 
-            }, 
+            data: { labels: topProducts.map(p => p.name), datasets: [{ data: topProducts.map(p => p.total - p.avail), backgroundColor: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'] }] }, 
             options: { responsive: true, maintainAspectRatio: false } 
         });
     }
@@ -755,15 +732,7 @@ function renderCharts() {
 
         locationChartInstance = new Chart(ctx3, { 
             type: 'bar', 
-            data: { 
-                labels: labels, 
-                datasets: [{ 
-                    label: 'ចំនួនជើងដឹក', 
-                    data: dataVals, 
-                    backgroundColor: '#10b981',
-                    borderRadius: 8
-                }] 
-            }, 
+            data: { labels: labels, datasets: [{ label: 'ចំនួនជើងដឹក', data: dataVals, backgroundColor: '#10b981', borderRadius: 8 }] }, 
             options: { responsive: true, maintainAspectRatio: false } 
         });
     }
@@ -810,9 +779,7 @@ function renderAll() {
                             <option value="ផល្លីន" ${d.driver==='ផល្លីន'?'selected':''}>ផល្លីន</option>
                         </select>
                     </td>
-                    <td class="p-4 text-center">
-                        <span class="px-2 py-1 rounded-lg text-[10px] font-bold ${d.status==='បានប្រគល់ជូន'?'bg-emerald-100 text-emerald-700':'bg-indigo-100 text-indigo-700'}">${d.status}</span>
-                    </td>
+                    <td class="p-4 text-center"><span class="px-2 py-1 rounded-lg text-[10px] font-bold ${d.status==='បានប្រគល់ជូន'?'bg-emerald-100 text-emerald-700':'bg-indigo-100 text-indigo-700'}">${d.status}</span></td>
                     <td class="p-4 text-center">
                         <select onchange="updateStatus('${d.invCode}', this.value)" class="vck-input p-1 rounded text-xs font-bold">
                             <option value="កំពុងរៀបចំ" ${d.status==='កំពុងរៀបចំ'?'selected':''}>កំពុងរៀបចំ</option>
@@ -835,23 +802,18 @@ function searchStockFunction() {
     });
 }
 
-function toggleMobileMenu() { 
-    document.getElementById('sidebarMenu')?.classList.toggle('hidden'); 
-}
+function toggleMobileMenu() { document.getElementById('sidebarMenu')?.classList.toggle('hidden'); }
 
-// Car Contacts functions
 async function saveCarContact() {
     const province = document.getElementById('carProvince').value.trim();
     const station = document.getElementById('carStation').value.trim();
     const phone = document.getElementById('carPhone').value.trim();
     const driverName = document.getElementById('carDriverName').value.trim() || '-';
     const note = document.getElementById('carNote').value.trim() || '-';
-
-    if (!province || !station || !phone) return alert("⚠️ សូមបំពេញខេត្ត ចំណត និងលេខទូរស័ព្ទឱ្យបានគ្រប់គ្រាន់!");
-
+    if (!province || !station || !phone) return alert("⚠️ សូមបំពេញខេត្ត ចំណត និងលេខទូរស័ព្ទ!");
     const id = Date.now();
     await database.ref('carContacts/' + id).set({ id, province, station, phone, driverName, note });
-    alert("🎉 រក្សាទុកលេខទូរស័ព្ទឡានជោគជ័យ!");
+    alert("🎉 រក្សាទុកលេខឡានជោគជ័យ!");
     ['carProvince', 'carStation', 'carPhone', 'carDriverName', 'carNote'].forEach(id => document.getElementById(id).value = '');
 }
 
